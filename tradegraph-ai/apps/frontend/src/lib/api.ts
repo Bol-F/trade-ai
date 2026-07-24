@@ -95,7 +95,7 @@ export const productSchema = z.object({
 })
 export type Product = z.infer<typeof productSchema>
 
-const metaSchema = z.object({
+export const metaSchema = z.object({
   dataset_version: z.string().nullable(),
   source_period_end: z.number().nullable(),
   generated_at: z.string(),
@@ -179,6 +179,87 @@ export const tradeApi = {
   timeseries: (filters: TradeFilters) => apiRequest(`/trade/timeseries?${filterQuery(filters)}`, timeseriesSchema),
   partners: (filters: TradeFilters) => apiRequest(`/trade/partners?${filterQuery(filters)}`, partnersSchema),
   topProducts: (filters: TradeFilters) => apiRequest(`/trade/top-products?${filterQuery(filters)}`, topProductsSchema),
+  map: (filters: TradeFilters & { top?: string }) => apiRequest(`/trade/map?${filterQuery(filters)}`, mapSchema),
+}
+
+const partnerMetricSchema = z.object({
+  iso3: z.string(),
+  name: z.string(),
+  trade_value_usd: z.number(),
+  share: z.number().optional(),
+})
+const historyMetricSchema = z.object({
+  year: z.number(),
+  value: z.union([z.string(), z.number()]).nullable(),
+  quantity: z.union([z.string(), z.number()]).nullable(),
+})
+const concentrationSchema = z.object({
+  hhi: z.number(),
+  supplier_count: z.number(),
+  suppliers: z.array(partnerMetricSchema),
+})
+const exposureSchema = z.object({
+  score: z.number(),
+  components: z.record(z.string(), z.number()),
+  methodology: z.string(),
+  hhi: z.number(),
+  supplier_count: z.number(),
+  volatility: z.number(),
+})
+const anomalySchema = z.object({
+  year: z.number(),
+  anomaly_score: z.number(),
+  severity: z.enum(["normal", "watch", "high_anomaly"]),
+  direction: z.enum(["up", "down", "flat"]),
+  detected_features: z.array(z.string()),
+  explanation: z.string(),
+})
+const mapSchema = z.object({
+  data: z.array(z.object({
+    exporter: z.object({ iso3: z.string(), name: z.string(), latitude: z.number().nullable(), longitude: z.number().nullable() }),
+    importer: z.object({ iso3: z.string(), name: z.string(), latitude: z.number().nullable(), longitude: z.number().nullable() }),
+    trade_value_usd: z.number().nullable(),
+  })),
+  meta: metaSchema,
+})
+const countryProfileSchema = z.object({
+  data: z.object({
+    iso3: z.string(),
+    total_imports_usd: z.number(),
+    total_exports_usd: z.number(),
+    top_products: z.array(z.object({ code: z.string(), trade_value_usd: z.number() })),
+    top_suppliers: z.array(partnerMetricSchema),
+    top_destinations: z.array(partnerMetricSchema),
+    concentration: concentrationSchema,
+    exposure: exposureSchema,
+    history: z.array(historyMetricSchema),
+  }),
+  meta: metaSchema,
+})
+const productProfileSchema = z.object({
+  data: z.object({
+    hs2: z.string(),
+    name: z.string(),
+    global_trend: z.array(historyMetricSchema),
+    top_exporters: z.array(partnerMetricSchema),
+    top_importers: z.array(partnerMetricSchema),
+    fastest_growing_countries: z.array(z.object({ iso3: z.string(), cagr: z.number() })),
+    concentration: concentrationSchema,
+    anomalies: z.array(anomalySchema),
+  }),
+  meta: metaSchema,
+})
+const anomaliesSchema = z.object({ data: z.array(anomalySchema), meta: metaSchema })
+
+export type MapFlow = z.infer<typeof mapSchema>["data"][number]
+export type CountryProfile = z.infer<typeof countryProfileSchema>["data"]
+export type ProductProfile = z.infer<typeof productProfileSchema>["data"]
+export type TradeAnomaly = z.infer<typeof anomalySchema>
+
+export const analyticsApi = {
+  countryProfile: (iso3: string) => apiRequest(`/analytics/country-profile/${encodeURIComponent(iso3)}`, countryProfileSchema),
+  productProfile: (hs2: string) => apiRequest(`/analytics/product-profile/${encodeURIComponent(hs2)}`, productProfileSchema),
+  anomalies: (filters: TradeFilters) => apiRequest(`/analytics/anomalies?${filterQuery(filters)}`, anomaliesSchema),
 }
 
 export function getHealth(): Promise<HealthResponse> {
