@@ -95,6 +95,47 @@ export const productSchema = z.object({
 })
 export type Product = z.infer<typeof productSchema>
 
+const metaSchema = z.object({
+  dataset_version: z.string().nullable(),
+  source_period_end: z.number().nullable(),
+  generated_at: z.string(),
+})
+const overviewSchema = z.object({
+  data: z.object({
+    total_trade_value_usd: z.number().nullable(),
+    total_quantity_tons: z.number().nullable(),
+    partner_count: z.number(),
+    yoy_change_percent: z.number().nullable(),
+  }),
+  meta: metaSchema,
+})
+const timeseriesSchema = z.object({
+  data: z.array(z.object({
+    year: z.number(),
+    trade_value_usd: z.number().nullable(),
+    quantity_tons: z.number().nullable(),
+  })),
+  meta: metaSchema,
+})
+const partnersSchema = z.object({
+  data: z.array(z.object({
+    iso3: z.string(),
+    name: z.string(),
+    trade_value_usd: z.number().nullable(),
+    quantity_tons: z.number().nullable(),
+  })),
+  meta: metaSchema,
+})
+const topProductsSchema = z.object({
+  data: z.array(z.object({
+    code: z.string(),
+    name: z.string(),
+    trade_value_usd: z.number().nullable(),
+  })),
+  meta: metaSchema,
+})
+export type TradeTimeseriesPoint = z.infer<typeof timeseriesSchema>["data"][number]
+
 function pageSchema<T>(item: z.ZodType<T>) {
   return z.object({ count: z.number(), next: z.string().nullable(), previous: z.string().nullable(), results: z.array(item) })
 }
@@ -115,6 +156,29 @@ export const catalogApi = {
   products: (search: string) =>
     apiRequest(`/products?search=${encodeURIComponent(search)}`, pageSchema(productSchema)),
   product: (code: string) => apiRequest(`/products/${encodeURIComponent(code)}`, productSchema),
+}
+
+export type TradeFilters = {
+  importer?: string
+  exporter?: string
+  product?: string
+  start_year?: string
+  end_year?: string
+}
+
+function filterQuery(filters: TradeFilters): string {
+  const params = new URLSearchParams()
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value) params.set(key, value)
+  })
+  return params.toString()
+}
+
+export const tradeApi = {
+  overview: (filters: TradeFilters) => apiRequest(`/trade/overview?${filterQuery(filters)}`, overviewSchema),
+  timeseries: (filters: TradeFilters) => apiRequest(`/trade/timeseries?${filterQuery(filters)}`, timeseriesSchema),
+  partners: (filters: TradeFilters) => apiRequest(`/trade/partners?${filterQuery(filters)}`, partnersSchema),
+  topProducts: (filters: TradeFilters) => apiRequest(`/trade/top-products?${filterQuery(filters)}`, topProductsSchema),
 }
 
 export function getHealth(): Promise<HealthResponse> {

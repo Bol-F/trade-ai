@@ -23,6 +23,7 @@ as 3.12 by `uv`; a matching system Python is not required.
 cp .env.example .env
 make setup
 make up
+make import-sample
 ```
 
 Open:
@@ -31,6 +32,10 @@ Open:
 - API docs: <http://localhost:8000/api/docs/>
 - OpenAPI schema: <http://localhost:8000/api/schema/>
 - MinIO console: <http://localhost:9001>
+
+`make import-sample` loads the checked-in synthetic BACI-compatible test dataset,
+writes normalized partitioned Parquet, and promotes it for the Explorer. It does
+not download or contain official BACI production data.
 
 Run checks with `make test` and `make lint`. Stop services with `make down`.
 
