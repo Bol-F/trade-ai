@@ -1,0 +1,6 @@
+baci_code,m49_code,iso2,iso3,name,region,subregion,latitude,longitude,landlocked,is_active
+860,860,UZ,UZB,Uzbekistan,Asia,Central Asia,41.377491,64.585262,true,true
+156,156,CN,CHN,China,Asia,Eastern Asia,35.861660,104.195397,false,true
+276,276,DE,DEU,Germany,Europe,Western Europe,51.165691,10.451526,false,true
+840,840,US,USA,United States,Americas,Northern America,37.090240,-95.712891,false,true
+250,250,FR,FRA,France,Europe,Western Europe,46.227638,2.213749,false,true

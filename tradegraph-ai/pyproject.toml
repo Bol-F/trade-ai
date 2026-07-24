@@ -7,10 +7,14 @@ dependencies = [
   "celery[redis]>=5.4,<6",
   "django>=5.1,<6",
   "django-cors-headers>=4.6,<5",
+  "django-filter>=25.1,<26",
   "djangorestframework>=3.15,<4",
+  "djangorestframework-simplejwt>=5.5,<6",
   "drf-spectacular>=0.28,<1",
   "gunicorn>=23,<24",
+  "polars>=1.30,<2",
   "psycopg[binary]>=3.2,<4",
+  "pyarrow>=19,<23",
   "python-json-logger>=3.2,<4",
   "redis>=5.2,<6",
 ]
@@ -31,26 +35,30 @@ package = false
 [tool.ruff]
 target-version = "py312"
 line-length = 100
-extend-exclude = ["apps/frontend"]
+extend-exclude = ["apps/frontend", "**/migrations/**"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "DJ"]
 
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "config.settings.test"
-pythonpath = ["apps/backend"]
-testpaths = ["apps/backend/tests"]
+pythonpath = ["apps/backend", "packages/data_pipeline/src"]
+testpaths = ["apps/backend/tests", "packages/data_pipeline/tests"]
 
 [tool.mypy]
 python_version = "3.12"
 plugins = ["mypy_django_plugin.main", "mypy_drf_plugin.main"]
 strict = true
-mypy_path = "apps/backend"
+mypy_path = "apps/backend,packages/data_pipeline/src"
 exclude = ["apps/frontend"]
 
 [[tool.mypy.overrides]]
-module = ["celery.*", "redis.*"]
+module = ["celery.*", "redis.*", "pyarrow", "pyarrow.*"]
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["catalog.filters"]
+ignore_errors = true
 
 [tool.django-stubs]
 django_settings_module = "config.settings.test"

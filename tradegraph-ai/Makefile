@@ -1,4 +1,4 @@
-.PHONY: setup up down logs migrate test lint format
+.PHONY: setup up down logs migrate test lint format import-sample
 
 setup:
 	uv sync
@@ -16,6 +16,9 @@ logs:
 
 migrate:
 	uv run python apps/backend/manage.py migrate
+
+import-sample:
+	uv run python apps/backend/manage.py import_sample
 
 test:
 	uv run pytest

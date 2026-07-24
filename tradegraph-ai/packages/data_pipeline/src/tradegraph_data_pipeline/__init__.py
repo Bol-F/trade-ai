@@ -1,1 +1,5 @@
-"""Data pipeline package. BACI ingestion is intentionally deferred."""
+"""BACI-compatible extraction, validation, transformation, and loading."""
+
+from tradegraph_data_pipeline.pipeline import PipelineResult, run_pipeline
+
+__all__ = ("PipelineResult", "run_pipeline")

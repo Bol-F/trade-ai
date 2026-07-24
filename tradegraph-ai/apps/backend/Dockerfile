@@ -8,5 +8,8 @@ ENV PYTHONUNBUFFERED=1 PATH="/app/.venv/bin:$PATH"
 WORKDIR /app
 COPY --from=builder /app/.venv /app/.venv
 COPY apps/backend /app/apps/backend
+COPY packages/data_pipeline /app/packages/data_pipeline
+COPY data/sample /app/data/sample
+ENV PYTHONPATH="/app/packages/data_pipeline/src"
 WORKDIR /app/apps/backend
 CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000"]

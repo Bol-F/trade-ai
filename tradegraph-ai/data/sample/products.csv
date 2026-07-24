@@ -1,0 +1,6 @@
+code,level,parent_code,name,description,is_active
+010121,6,0101,Pure-bred breeding horses,Synthetic HS92 sample product,true
+070200,6,0702,Tomatoes fresh or chilled,Synthetic HS92 sample product,true
+090111,6,0901,Coffee not roasted not decaffeinated,Synthetic HS92 sample product,true
+270900,6,2709,Petroleum oils crude,Synthetic HS92 sample product,true
+870323,6,8703,Motor cars 1500-3000cc,Synthetic HS92 sample product,true

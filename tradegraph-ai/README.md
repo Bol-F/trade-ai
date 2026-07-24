@@ -1,8 +1,8 @@
 # TradeGraph AI
 
 TradeGraph AI is an MVP foundation for a global trade analytics platform. This
-repository intentionally contains infrastructure and application shells only:
-authentication flows, trade data ingestion, analytics, and ML models are deferred.
+repository now includes secure cookie-based authentication and reference catalogs.
+Trade data ingestion, analytics, forecasting, and ML models remain deferred.
 
 ## Architecture
 
@@ -48,3 +48,14 @@ npm run dev
 ```
 
 Never commit `.env`. The checked-in `.env.example` contains placeholders only.
+
+## Catalog imports
+
+Country and HS92 product metadata can be loaded from local UTF-8 CSV or JSON files:
+
+```bash
+uv run python apps/backend/manage.py import_countries ./countries.csv
+uv run python apps/backend/manage.py import_products ./products.csv
+```
+
+Product codes are read and stored as strings, so leading zeros are preserved.

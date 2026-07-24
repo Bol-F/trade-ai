@@ -4,10 +4,7 @@ import pytest
 from django.urls import reverse
 from rest_framework.test import APIClient
 
-
-@pytest.fixture
-def api_client() -> APIClient:
-    return APIClient()
+pytestmark = pytest.mark.django_db
 
 
 def test_liveness(api_client: APIClient) -> None:
@@ -16,7 +13,6 @@ def test_liveness(api_client: APIClient) -> None:
     assert response.json() == {"status": "ok"}
 
 
-@pytest.mark.django_db
 @patch("health.views.Redis.from_url")
 def test_readiness_when_dependencies_are_available(
     redis_from_url: Mock, api_client: APIClient
@@ -27,7 +23,6 @@ def test_readiness_when_dependencies_are_available(
     assert response.json()["checks"] == {"postgres": True, "redis": True}
 
 
-@pytest.mark.django_db
 @patch("health.views.Redis.from_url")
 def test_readiness_when_redis_is_unavailable(redis_from_url: Mock, api_client: APIClient) -> None:
     from redis.exceptions import ConnectionError
