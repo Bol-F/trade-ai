@@ -1,0 +1,13 @@
+{
+  "name": "tradegraph-ai",
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix apps/frontend run dev",
+    "build": "npm --prefix apps/frontend run build",
+    "lint": "npm --prefix apps/frontend run lint",
+    "test": "npm --prefix apps/frontend test -- --run",
+    "test:e2e": "npm --prefix apps/frontend run test:e2e",
+    "format": "npm --prefix apps/frontend run format",
+    "install:frontend": "npm --prefix apps/frontend ci"
+  }
+}
