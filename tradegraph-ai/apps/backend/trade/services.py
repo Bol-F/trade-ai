@@ -8,7 +8,7 @@ from trade.models import AnnualTradeFlow
 
 def latest_ready_dataset() -> DatasetVersion | None:
     return (
-        DatasetVersion.objects.filter(status=DatasetVersion.Status.READY)
+        DatasetVersion.objects.filter(status=DatasetVersion.Status.READY, is_active=True)
         .select_related("source")
         .first()
     )

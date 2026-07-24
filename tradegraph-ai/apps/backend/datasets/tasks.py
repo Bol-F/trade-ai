@@ -1,13 +1,8 @@
-from pathlib import Path
-
-from catalog.models import Country, Product
 from celery import shared_task
 from django.db.models import Sum
-from tradegraph_data_pipeline.extract.csv import read_baci_csv
-from tradegraph_data_pipeline.validate.baci import validate_baci
 
 from datasets.models import DatasetVersion
-from datasets.services import import_sample_dataset
+from datasets.services import import_sample_dataset, validate_dataset
 
 
 @shared_task(name="datasets.import_sample")  # type: ignore[untyped-decorator]
@@ -36,22 +31,6 @@ def rebuild_aggregates_task(dataset_version_id: str) -> dict[str, float]:
 
 
 @shared_task(name="datasets.validate_version")  # type: ignore[untyped-decorator]
-def validate_dataset_version_task(dataset_version_id: str) -> dict[str, int]:
+def validate_dataset_version_task(dataset_version_id: str) -> dict[str, int | str | bool]:
     dataset = DatasetVersion.objects.get(pk=dataset_version_id)
-    raw_path = dataset.metadata.get("raw_path")
-    if not raw_path:
-        raise ValueError("Dataset metadata does not include raw_path.")
-    result = validate_baci(
-        read_baci_csv(Path(raw_path)),
-        set(Country.objects.values_list("baci_code", flat=True)),
-        set(
-            Product.objects.filter(classification=dataset.classification).values_list(
-                "code", flat=True
-            )
-        ),
-    )
-    return {
-        "row_count": result.row_count,
-        "period_start": result.min_year,
-        "period_end": result.max_year,
-    }
+    return validate_dataset(dataset)

@@ -2,6 +2,7 @@ import uuid
 
 from catalog.models import ProductClassification
 from django.db import models
+from django.db.models import Q
 
 
 class DataSource(models.Model):
@@ -45,13 +46,25 @@ class DatasetVersion(models.Model):
     metadata = models.JSONField(default=dict, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     promoted_at = models.DateTimeField(null=True, blank=True)
+    is_active = models.BooleanField(default=False)
 
     class Meta:
         constraints = [
             models.UniqueConstraint(
                 fields=("source", "version", "classification"),
                 name="unique_source_version_classification",
-            )
+            ),
+            models.UniqueConstraint(
+                fields=("source", "classification"),
+                condition=Q(is_active=True),
+                name="one_active_dataset_per_source_classification",
+            ),
+        ]
+        indexes = [
+            models.Index(
+                fields=("source", "status", "-period_end"), name="dataset_source_status_idx"
+            ),
+            models.Index(fields=("is_active", "-promoted_at"), name="dataset_active_promoted_idx"),
         ]
         ordering = ("-period_end", "-created_at")
 

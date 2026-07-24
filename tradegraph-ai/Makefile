@@ -1,4 +1,4 @@
-.PHONY: setup up down logs migrate test lint format import-sample build-features train-baseline train-forecast evaluate-models
+.PHONY: setup up down logs migrate test lint format import-sample import-baci validate-dataset activate-dataset build-features train-baseline train-forecast evaluate-models
 
 setup:
 	uv sync
@@ -19,6 +19,15 @@ migrate:
 
 import-sample:
 	uv run python apps/backend/manage.py import_sample
+
+import-baci:
+	uv run python apps/backend/manage.py import_baci --file "$(FILE)" --dataset-version "$(VERSION)" $(if $(CHECKSUM),--checksum "$(CHECKSUM)",)
+
+validate-dataset:
+	uv run python apps/backend/manage.py validate_dataset --dataset-version "$(VERSION)"
+
+activate-dataset:
+	uv run python apps/backend/manage.py activate_dataset --dataset-version "$(VERSION)"
 
 build-features:
 	uv run python apps/backend/manage.py build_features

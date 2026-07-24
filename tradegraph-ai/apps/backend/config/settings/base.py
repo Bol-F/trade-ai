@@ -111,6 +111,20 @@ SPECTACULAR_SETTINGS = {
 }
 
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+BACI_DOWNLOAD_URL = os.getenv("BACI_DOWNLOAD_URL", "")
+EXTERNAL_API_TIMEOUT_SECONDS = int(os.getenv("EXTERNAL_API_TIMEOUT_SECONDS", "20"))
+WORLD_BANK_INDICATORS = [
+    value
+    for value in os.getenv(
+        "WORLD_BANK_INDICATORS", "NY.GDP.MKTP.CD,SP.POP.TOTL,PA.NUS.FCRF"
+    ).split(",")
+    if value
+]
+UN_COMTRADE_API_KEY = os.getenv("UN_COMTRADE_API_KEY", "")
+UN_COMTRADE_DAILY_LIMIT = int(os.getenv("UN_COMTRADE_DAILY_LIMIT", "450"))
+UN_COMTRADE_MIN_INTERVAL_SECONDS = float(
+    os.getenv("UN_COMTRADE_MIN_INTERVAL_SECONDS", "1")
+)
 CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.redis.RedisCache",
