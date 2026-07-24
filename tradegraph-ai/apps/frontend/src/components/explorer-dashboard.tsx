@@ -1,21 +1,23 @@
 "use client"
 
-import { useQuery } from "@tanstack/react-query"
+import { useMutation, useQuery } from "@tanstack/react-query"
 import { FormEvent, useMemo, useState } from "react"
 import { BarChart3, Boxes, Globe2, TrendingUp } from "lucide-react"
 import { EChart } from "@/components/echarts"
+import { useAuth } from "@/components/auth-provider"
 import { PageContainer } from "@/components/page-container"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select } from "@/components/ui/select"
-import { catalogApi, tradeApi, type TradeFilters } from "@/lib/api"
+import { catalogApi, savedAnalysesApi, tradeApi, type TradeFilters } from "@/lib/api"
 import { toTimeseriesOption } from "@/lib/chart-transform"
 
 const money = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", notation: "compact", maximumFractionDigits: 1 })
 const number = new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 })
 
 export function ExplorerDashboard() {
+  const { user } = useAuth()
   const [draft, setDraft] = useState<TradeFilters>({ start_year: "2017", end_year: "2024" })
   const [filters, setFilters] = useState<TradeFilters>(draft)
   const countries = useQuery({ queryKey: ["countries", "explorer"], queryFn: () => catalogApi.countries("") })
@@ -26,6 +28,13 @@ export function ExplorerDashboard() {
   const chartOption = useMemo(() => toTimeseriesOption(timeseries.data?.data ?? []), [timeseries.data])
   const loading = overview.isLoading || timeseries.isLoading || partners.isLoading || products.isLoading
   const failed = overview.isError || timeseries.isError || partners.isError || products.isError
+  const saveAnalysis = useMutation({
+    mutationFn: () => savedAnalysesApi.create({
+      title: `Trade analysis ${new Date().toISOString().slice(0, 10)}`,
+      filters,
+      visualization: "explorer",
+    }),
+  })
 
   function apply(event: FormEvent) {
     event.preventDefault()
@@ -35,7 +44,7 @@ export function ExplorerDashboard() {
   return <PageContainer className="py-10 md:py-14">
     <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
       <div><p className="font-mono text-xs uppercase tracking-widest text-primary">Synthetic sample · BACI-compatible</p><h1 className="mt-3 text-4xl font-semibold tracking-tight">Trade Explorer</h1><p className="mt-3 max-w-2xl text-muted-foreground">Follow eight years of normalized sample flows from source CSV to analytical API.</p></div>
-      {overview.data?.meta.dataset_version && <p className="font-mono text-xs text-muted-foreground">Dataset {overview.data.meta.dataset_version} · through {overview.data.meta.source_period_end}</p>}
+      <div className="flex flex-col items-end gap-2">{overview.data?.meta.dataset_version && <p className="font-mono text-xs text-muted-foreground">Dataset {overview.data.meta.dataset_version} · through {overview.data.meta.source_period_end}</p>}{user && <Button variant="outline" onClick={() => saveAnalysis.mutate()} disabled={saveAnalysis.isPending}>{saveAnalysis.isSuccess ? "Analysis saved" : saveAnalysis.isPending ? "Saving…" : "Save analysis"}</Button>}</div>
     </div>
 
     <form onSubmit={apply} className="mt-8 grid gap-4 rounded-xl border bg-card p-5 sm:grid-cols-2 lg:grid-cols-5">

@@ -14,7 +14,7 @@ const AuthContext = createContext<AuthState | null>(null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient()
-  const query = useQuery({
+  const query = useQuery<User | null>({
     queryKey: ["current-user"],
     queryFn: authApi.me,
     retry: false,
@@ -25,6 +25,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user: query.data ?? null,
         isLoading: query.isLoading,
         refresh: async () => {
+          queryClient.setQueryData<User | null>(["current-user"], null)
           await queryClient.invalidateQueries({ queryKey: ["current-user"] })
         },
       }}

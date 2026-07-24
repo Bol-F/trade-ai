@@ -1,18 +1,34 @@
 # Architecture
 
-TradeGraph AI starts as a modular monolith: a single Django deployment with explicit
-domain apps and a separate Next.js user interface. This minimizes operational cost
-while preserving boundaries that can later become services.
+```mermaid
+flowchart LR
+    U[Browser] --> N[Next.js]
+    N --> D[Django REST API]
+    D --> P[(PostgreSQL)]
+    D --> R[(Redis cache)]
+    D --> M[Prometheus metrics]
+    C[Celery worker/beat] --> P
+    C --> R
+    B[BACI CSV/ZIP] --> DP[Polars/PyArrow pipeline]
+    DP --> Q[(Partitioned Parquet)]
+    DP --> P
+    P --> ML[Local sklearn package]
+    ML --> A[(Versioned artifacts)]
+    WB[World Bank optional] -.-> D
+    UC[UN Comtrade optional] -.-> D
+```
 
-PostgreSQL is the transactional and initial analytical store. Query code should live
-behind domain services/repositories rather than spread through views, allowing a
-ClickHouse-backed implementation to be introduced later without changing the API.
-Redis supplies ephemeral coordination and Celery transport. MinIO holds immutable
-Parquet datasets; metadata and object locations belong in PostgreSQL.
+The backend is a modular monolith. Domain logic lives in Django services or the
+standalone pipeline/ML packages, never in presentation views. PostgreSQL is the
+system of record; Redis handles caching and Celery transport. Parquet is the
+immutable analytical interchange format. MinIO is provisioned for object storage.
 
-The `data_pipeline` and `ml` packages are intentionally empty public boundaries.
-They must not import Django presentation code. Celery tasks will eventually call
-their application services, keeping long-running work outside web requests.
+Dataset processing and activation are separate transactions. A ready dataset is
+validated before activation; activation locks competing versions and retains the
+previous version for rollback. Model activation follows the same candidate/active/
+archived lifecycle with a database uniqueness constraint.
 
-All public HTTP APIs are versioned beneath `/api/v1/`. Liveness checks only process
-availability; readiness verifies mandatory PostgreSQL and Redis dependencies.
+Analytical cache keys include dataset version, endpoint, normalized filters, and
+aggregation level. This prevents stale results after activation. Query boundaries
+and service interfaces allow ClickHouse to replace large PostgreSQL aggregations
+post-MVP without changing public APIs.

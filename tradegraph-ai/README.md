@@ -1,74 +1,69 @@
 # TradeGraph AI
 
-TradeGraph AI is an MVP foundation for a global trade analytics platform. This
-repository now includes secure cookie-based authentication and reference catalogs.
-Trade data ingestion, analytics, forecasting, and ML models remain deferred.
+TradeGraph AI is a self-hosted MVP for reproducible international-trade ingestion,
+analytics, anomaly detection, forecasting, and supplier discovery. It uses no
+external LLM and requires no paid API.
 
-## Architecture
+## New developer setup
 
-- `apps/backend`: Django + DRF modular monolith, Celery, OpenAPI, health checks.
-- `apps/frontend`: Next.js App Router frontend with TypeScript and Tailwind.
-- `packages/data_pipeline`: reserved boundary for ingestion and Parquet transforms.
-- `packages/ml`: reserved boundary for future forecasting and recommendation models.
-- PostgreSQL is the system of record, Redis backs Celery, and MinIO stores data files.
-
-## Prerequisites
-
-Install Docker Desktop, GNU Make, Node.js 20.9+, and `uv`. Python is provisioned
-as 3.12 by `uv`; a matching system Python is not required.
-
-## Quick start
+Prerequisites: Docker Desktop with the Linux engine running, GNU Make, Git, Node
+22+, and [`uv`](https://docs.astral.sh/uv/).
 
 ```bash
+git clone git@github.com:Bol-F/trade-ai.git
+cd trade-ai/tradegraph-ai
 cp .env.example .env
 make setup
 make up
+make migrate
 make import-sample
 ```
 
 Open:
 
-- Frontend: <http://localhost:3000>
-- API docs: <http://localhost:8000/api/docs/>
+- Application: <http://localhost:3000>
+- Explorer: <http://localhost:3000/explorer>
+- API documentation: <http://localhost:8000/api/docs/>
 - OpenAPI schema: <http://localhost:8000/api/schema/>
+- Metrics: <http://localhost:8000/metrics>
 - MinIO console: <http://localhost:9001>
 
-`make import-sample` loads the checked-in synthetic BACI-compatible test dataset,
-writes normalized partitioned Parquet, and promotes it for the Explorer. It does
-not download or contain official BACI production data.
+Stop with `make down`. View service output with `make logs`.
 
-Run checks with `make test` and `make lint`. Stop services with `make down`.
-
-## Local development without Docker
-
-Start PostgreSQL and Redis, update `.env`, then:
+## Verification
 
 ```bash
-uv sync
-uv run python apps/backend/manage.py migrate
-uv run python apps/backend/manage.py runserver
-cd apps/frontend
-npm ci
-npm run dev
+make lint
+make test
+cd apps/frontend && npm run build && npm run test:e2e
+cd ../..
+docker compose build
+uv run python scripts/check_secrets.py
 ```
 
-Never commit `.env`. The checked-in `.env.example` contains placeholders only.
+## Sample and production data
 
-## Catalog imports
-
-Country and HS92 product metadata can be loaded from local UTF-8 CSV or JSON files:
+The checked-in sample is synthetic test data:
 
 ```bash
-uv run python apps/backend/manage.py import_countries ./countries.csv
-uv run python apps/backend/manage.py import_products ./products.csv
+make import-sample
 ```
 
-Product codes are read and stored as strings, so leading zeros are preserved.
+Real BACI HS92 ZIP/CSV imports are streaming, partitioned by year, resumable and
+inactive until explicitly promoted:
+
+```bash
+make import-baci FILE=/absolute/path/BACI_HS92.zip VERSION=202401 CHECKSUM=<optional-sha256>
+make validate-dataset VERSION=202401
+make activate-dataset VERSION=202401
+```
+
+`BACI_DOWNLOAD_URL` can configure a remote source. CI never downloads the full
+dataset. Load matching country and HS92 metadata before a real import.
 
 ## Local ML workflow
 
-The forecasting and anomaly models train only on the currently promoted project
-dataset. No external AI service is used.
+All models train only on the active project dataset:
 
 ```bash
 make build-features
@@ -77,5 +72,37 @@ make train-forecast
 make evaluate-models
 ```
 
-Model artifacts and evaluation reports are written to `artifacts/ml`. Under Docker
-Compose, that directory uses the persistent `ml-artifacts` volume.
+Artifacts and evaluation reports persist in `artifacts/ml` or the Compose
+`ml-artifacts` volume. A candidate activates only when its validation MAE beats
+the selected moving-average baseline.
+
+## Repository
+
+```text
+tradegraph-ai/
+├── apps/backend/             Django, DRF, Celery
+├── apps/frontend/            Next.js, ECharts, MapLibre, Playwright
+├── packages/data_pipeline/   Polars/PyArrow BACI processing
+├── packages/ml/              Features, sklearn models, evaluation, registry
+├── data/sample/              Synthetic BACI-compatible fixture
+├── docs/                     Architecture, security, deployment, methods
+├── compose.yml
+├── Makefile
+├── pyproject.toml
+└── uv.lock
+```
+
+## Limitations
+
+- The bundled data is synthetic and cannot support real policy conclusions.
+- Forecasts cannot anticipate policy, conflict, climate, reporting revisions or
+  structural breaks.
+- Exposure is a transparent trade-supply indicator, not a comprehensive
+  national-security or economic-risk score.
+- PostgreSQL is appropriate for the MVP; very large analytical workloads may
+  later require ClickHouse.
+- Prometheus counters are process-local unless deployed with a multiprocess-aware
+  collector.
+
+See [deployment](docs/deployment.md), [security](docs/security.md), and
+[ML methodology](docs/ml-methodology.md) for operational details.

@@ -353,6 +353,23 @@ export const adminApi = {
   dataHealth: () => apiRequest("/admin/data-health", dataHealthSchema),
 }
 
+const savedAnalysisSchema = z.object({
+  id: z.string().uuid(),
+  title: z.string(),
+  description: z.string(),
+  filters: z.record(z.string(), z.unknown()),
+  visualization: z.string(),
+  created_at: z.string(),
+  updated_at: z.string(),
+})
+export const savedAnalysesApi = {
+  create: (payload: { title: string; filters: TradeFilters; visualization: string }) =>
+    apiRequest("/saved-analyses", savedAnalysisSchema, {
+      method: "POST",
+      body: JSON.stringify({ ...payload, description: "" }),
+    }),
+}
+
 export function getHealth(): Promise<HealthResponse> {
   return apiRequest("/health/ready", healthSchema)
 }
