@@ -43,6 +43,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "audit.middleware.RequestObservabilityMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -102,7 +103,15 @@ REST_FRAMEWORK = {
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 25,
     "EXCEPTION_HANDLER": "config.exceptions.api_exception_handler",
-    "DEFAULT_THROTTLE_RATES": {"login": "5/min"},
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.AnonRateThrottle",
+        "rest_framework.throttling.UserRateThrottle",
+    ],
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": "120/min",
+        "user": "600/min",
+        "login": "5/min",
+    },
 }
 SPECTACULAR_SETTINGS = {
     "TITLE": "TradeGraph AI API",
@@ -115,16 +124,14 @@ BACI_DOWNLOAD_URL = os.getenv("BACI_DOWNLOAD_URL", "")
 EXTERNAL_API_TIMEOUT_SECONDS = int(os.getenv("EXTERNAL_API_TIMEOUT_SECONDS", "20"))
 WORLD_BANK_INDICATORS = [
     value
-    for value in os.getenv(
-        "WORLD_BANK_INDICATORS", "NY.GDP.MKTP.CD,SP.POP.TOTL,PA.NUS.FCRF"
-    ).split(",")
+    for value in os.getenv("WORLD_BANK_INDICATORS", "NY.GDP.MKTP.CD,SP.POP.TOTL,PA.NUS.FCRF").split(
+        ","
+    )
     if value
 ]
 UN_COMTRADE_API_KEY = os.getenv("UN_COMTRADE_API_KEY", "")
 UN_COMTRADE_DAILY_LIMIT = int(os.getenv("UN_COMTRADE_DAILY_LIMIT", "450"))
-UN_COMTRADE_MIN_INTERVAL_SECONDS = float(
-    os.getenv("UN_COMTRADE_MIN_INTERVAL_SECONDS", "1")
-)
+UN_COMTRADE_MIN_INTERVAL_SECONDS = float(os.getenv("UN_COMTRADE_MIN_INTERVAL_SECONDS", "1"))
 CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.redis.RedisCache",
@@ -145,6 +152,8 @@ SIMPLE_JWT = {
 }
 AUTH_COOKIE_SECURE = os.getenv("AUTH_COOKIE_SECURE", "false").lower() == "true"
 AUTH_COOKIE_SAMESITE = os.getenv("AUTH_COOKIE_SAMESITE", "Lax")
+DATA_UPLOAD_MAX_MEMORY_SIZE = int(os.getenv("DATA_UPLOAD_MAX_MEMORY_SIZE", str(10 * 1024 * 1024)))
+FILE_UPLOAD_MAX_MEMORY_SIZE = int(os.getenv("FILE_UPLOAD_MAX_MEMORY_SIZE", str(10 * 1024 * 1024)))
 
 LOGGING = {
     "version": 1,
@@ -152,9 +161,21 @@ LOGGING = {
     "formatters": {
         "json": {
             "()": "pythonjsonlogger.json.JsonFormatter",
-            "format": "%(asctime)s %(levelname)s %(name)s %(message)s",
+            "format": (
+                "%(asctime)s %(levelname)s %(name)s %(message)s %(request_id)s %(user_id)s "
+                "%(endpoint)s %(duration)s %(status_code)s %(task_id)s "
+                "%(dataset_version)s %(model_version)s"
+            ),
+            "rename_fields": {"asctime": "timestamp", "levelname": "level"},
         }
     },
-    "handlers": {"console": {"class": "logging.StreamHandler", "formatter": "json"}},
+    "filters": {"structured_defaults": {"()": "audit.logging.StructuredDefaultsFilter"}},
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "json",
+            "filters": ["structured_defaults"],
+        }
+    },
     "root": {"handlers": ["console"], "level": os.getenv("LOG_LEVEL", "INFO")},
 }

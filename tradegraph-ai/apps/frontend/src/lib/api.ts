@@ -297,6 +297,62 @@ export const mlApi = {
     apiRequest("/ml/supplier-recommendations", recommendationSchema, { method: "POST", body: JSON.stringify(payload) }),
 }
 
+const dataHealthSchema = z.object({
+  sources: z.array(z.object({
+    code: z.string(),
+    name: z.string(),
+    is_enabled: z.boolean(),
+    requires_api_key: z.boolean(),
+    updated_at: z.string(),
+  })),
+  active_dataset: z.object({
+    version: z.string(),
+    source: z.string(),
+    row_count: z.number(),
+    period_start: z.number(),
+    period_end: z.number(),
+    promoted_at: z.string().nullable(),
+  }).nullable(),
+  versions: z.array(z.object({
+    version: z.string(),
+    source: z.string(),
+    status: z.string(),
+    is_active: z.boolean(),
+    row_count: z.number(),
+    period_start: z.number(),
+    period_end: z.number(),
+  })),
+  ingestion_runs: z.array(z.object({
+    id: z.string(),
+    dataset_version__version: z.string(),
+    task_name: z.string(),
+    status: z.string(),
+    records_read: z.number(),
+    records_written: z.number(),
+    records_rejected: z.number(),
+    error_message: z.string(),
+    started_at: z.string(),
+    finished_at: z.string().nullable(),
+  })),
+  failures: z.number(),
+  models: z.array(z.object({
+    model_name: z.string(),
+    model_version: z.string(),
+    task_type: z.string(),
+    status: z.string(),
+    dataset_version__version: z.string(),
+    created_at: z.string(),
+    activated_at: z.string().nullable(),
+  })),
+  active_models: z.number(),
+  data_freshness: z.number().nullable(),
+  cache_status: z.string(),
+})
+
+export const adminApi = {
+  dataHealth: () => apiRequest("/admin/data-health", dataHealthSchema),
+}
+
 export function getHealth(): Promise<HealthResponse> {
   return apiRequest("/health/ready", healthSchema)
 }

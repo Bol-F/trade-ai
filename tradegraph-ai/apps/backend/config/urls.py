@@ -1,12 +1,14 @@
 from django.contrib import admin
 from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
+from health.metrics import metrics
 from health.views import LivenessView, ReadinessView
 
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/v1/health/live", LivenessView.as_view(), name="health-live"),
     path("api/v1/health/ready", ReadinessView.as_view(), name="health-ready"),
+    path("metrics", metrics, name="metrics"),
     path("api/v1/auth/", include("accounts.urls")),
     path("api/v1/", include("catalog.urls")),
     path("api/v1/", include("datasets.urls")),
