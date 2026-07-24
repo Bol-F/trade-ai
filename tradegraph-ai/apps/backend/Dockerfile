@@ -1,6 +1,7 @@
 FROM ghcr.io/astral-sh/uv:0.8-python3.12-bookworm-slim AS builder
 WORKDIR /app
 COPY pyproject.toml uv.lock ./
+COPY packages/data_pipeline /app/packages/data_pipeline
 COPY packages/ml /app/packages/ml
 RUN uv sync --frozen --no-dev
 

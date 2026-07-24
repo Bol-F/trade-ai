@@ -46,6 +46,10 @@ Start PostgreSQL and Redis:
 docker compose --env-file .env.local up -d postgres redis
 ```
 
+Docker Desktop must be open and its Linux engine must be running before this
+command. If it reports `dockerDesktopLinuxEngine` or `daemon is not running`,
+start Docker Desktop and wait until it says the engine is running.
+
 Create the database tables and import the sample:
 
 ```powershell
@@ -63,7 +67,7 @@ Terminal 1 — backend:
 uv run --env-file .env.local python apps/backend/manage.py runserver
 ```
 
-Terminal 2 — frontend:
+Terminal 2 — frontend, from either `trade-ai` or `trade-ai\tradegraph-ai`:
 
 ```powershell
 npm run dev
@@ -129,7 +133,8 @@ Then retry the command.
 
 ### Django cannot connect to PostgreSQL or Redis
 
-Make sure Docker Desktop is running, then start the services:
+This normally means the Docker services did not start. Open Docker Desktop, wait
+for the Linux engine to become ready, then start the services:
 
 ```powershell
 docker compose --env-file .env.local up -d postgres redis
