@@ -1,7 +1,7 @@
 from pathlib import Path
 
 import polars as pl
-import pyarrow.dataset as ds  # type: ignore[import-untyped]
+import pyarrow.dataset as ds
 
 
 def write_partitioned_parquet(frame: pl.DataFrame, destination: Path) -> Path:
