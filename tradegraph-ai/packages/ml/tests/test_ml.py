@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import cast
 
 import numpy as np
 import polars as pl
@@ -40,7 +41,10 @@ def test_features_use_only_past_values_and_preserve_keys() -> None:
 def test_chronological_split_never_mixes_future() -> None:
     frame = build_forecast_features(flow_frame())
     train, validation, test = chronological_split(frame, 2022, 2023)
-    assert train["year"].max() < validation["year"].min() < test["year"].min()
+    train_end = cast(int, train["year"].max())
+    validation_start = cast(int, validation["year"].min())
+    test_start = cast(int, test["year"].min())
+    assert train_end < validation_start < test_start
 
 
 def test_seed_baselines_and_metrics_are_deterministic() -> None:

@@ -6,8 +6,8 @@ external LLM and requires no paid API.
 
 ## New developer setup
 
-Prerequisites: Docker Desktop with the Linux engine running, GNU Make, Git, Node
-22+, and [`uv`](https://docs.astral.sh/uv/).
+Prerequisites: Docker Desktop with the Linux engine running, Git, Node 22+, and
+[`uv`](https://docs.astral.sh/uv/). GNU Make is optional.
 
 ```bash
 git clone git@github.com:Bol-F/trade-ai.git
@@ -17,6 +17,16 @@ make setup
 make up
 make migrate
 make import-sample
+```
+
+Windows PowerShell users can run the same workflow without installing Make:
+
+```powershell
+Copy-Item .env.example .env
+.\scripts\dev.ps1 setup
+.\scripts\dev.ps1 up
+.\scripts\dev.ps1 migrate
+.\scripts\dev.ps1 import-sample
 ```
 
 Open:
@@ -35,11 +45,19 @@ Stop with `make down`. View service output with `make logs`.
 ```bash
 make lint
 make test
-cd apps/frontend && npm run build && npm run test:e2e
-cd ../..
+npm run build
+npm run test:e2e
 docker compose build
 uv run python scripts/check_secrets.py
 ```
+
+Run `uv run mypy .` and all project-level npm commands from this
+`tradegraph-ai` directory. The project-level `package.json` forwards npm
+commands to `apps/frontend`; dependencies remain locked in
+`apps/frontend/package-lock.json`.
+
+On Windows, use `.\scripts\dev.ps1 lint` and `.\scripts\dev.ps1 test` as the
+Make equivalents.
 
 ## Sample and production data
 

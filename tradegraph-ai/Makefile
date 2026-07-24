@@ -43,12 +43,12 @@ evaluate-models:
 
 test:
 	uv run pytest
-	cd apps/frontend && npm test -- --run
+	npm test
 
 lint:
 	uv run ruff check .
-	uv run mypy apps/backend
-	cd apps/frontend && npm run lint
+	uv run mypy .
+	npm run lint
 
 format:
 	uv run ruff format .
