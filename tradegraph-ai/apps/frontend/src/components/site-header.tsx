@@ -8,7 +8,7 @@ import { ThemeToggle } from "@/components/theme-toggle"
 import { Button } from "@/components/ui/button"
 import { authApi } from "@/lib/api"
 
-const links = [["Countries", "/countries"], ["Products", "/products"], ["Explorer", "/explorer"], ["Map", "/map"], ["Anomalies", "/anomalies"]]
+const links = [["Countries", "/countries"], ["Products", "/products"], ["Explorer", "/explorer"], ["Map", "/map"], ["Anomalies", "/anomalies"], ["Forecast", "/forecast"], ["Supplier Finder", "/supplier-finder"]]
 
 export function SiteHeader() {
   const { user, isLoading, refresh } = useAuth()

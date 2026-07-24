@@ -262,6 +262,41 @@ export const analyticsApi = {
   anomalies: (filters: TradeFilters) => apiRequest(`/analytics/anomalies?${filterQuery(filters)}`, anomaliesSchema),
 }
 
+const forecastSchema = z.object({
+  request_id: z.string().uuid(),
+  historical_values: z.array(z.object({ year: z.number(), value: z.number() })),
+  forecast: z.object({ year: z.number(), value: z.number() }),
+  baseline_forecast: z.number(),
+  model_name: z.string(),
+  model_version: z.string(),
+  dataset_version: z.string(),
+  training_period: z.record(z.string(), z.unknown()),
+  metrics: z.record(z.string(), z.unknown()),
+  main_input_factors: z.array(z.string()),
+  data_freshness: z.number(),
+})
+const recommendationSchema = z.object({
+  candidates: z.array(z.object({
+    country: z.string(),
+    name: z.string(),
+    recommendation_score: z.number(),
+    component_scores: z.record(z.string(), z.number()),
+    reasons: z.array(z.string()),
+  })),
+  data_freshness: z.number(),
+  dataset_version: z.string(),
+  methodology: z.string(),
+})
+export type ForecastResult = z.infer<typeof forecastSchema>
+export type SupplierRecommendation = z.infer<typeof recommendationSchema>["candidates"][number]
+
+export const mlApi = {
+  forecast: (payload: { importer: string; exporter: string; hs2: string; year: number }) =>
+    apiRequest("/ml/forecast", forecastSchema, { method: "POST", body: JSON.stringify(payload) }),
+  recommendations: (payload: { importer: string; hs2: string; year: number }) =>
+    apiRequest("/ml/supplier-recommendations", recommendationSchema, { method: "POST", body: JSON.stringify(payload) }),
+}
+
 export function getHealth(): Promise<HealthResponse> {
   return apiRequest("/health/ready", healthSchema)
 }

@@ -64,3 +64,18 @@ uv run python apps/backend/manage.py import_products ./products.csv
 ```
 
 Product codes are read and stored as strings, so leading zeros are preserved.
+
+## Local ML workflow
+
+The forecasting and anomaly models train only on the currently promoted project
+dataset. No external AI service is used.
+
+```bash
+make build-features
+make train-baseline
+make train-forecast
+make evaluate-models
+```
+
+Model artifacts and evaluation reports are written to `artifacts/ml`. Under Docker
+Compose, that directory uses the persistent `ml-artifacts` volume.
