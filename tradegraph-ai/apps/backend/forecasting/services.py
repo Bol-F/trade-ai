@@ -112,10 +112,25 @@ def train_forecast_models(dataset: DatasetVersion | None = None) -> ModelVersion
         )
     name, model, report = min(evaluated, key=lambda item: item[2]["global"]["mae"])
     beats_baseline = report["global"]["mae"] < baseline_report["global"]["mae"]
+    development = pl.concat([train, validation])
+    model.fit(
+        development.select(feature_columns),
+        development["target"].to_numpy(),
+    )
+    test_actual_usd = np.expm1(test["target"].to_numpy())
+    test_predictions = np.expm1(model.predict(test.select(feature_columns)))
+    test_baseline = moving_average_forecast(
+        test.select(["trade_value_lag_1", "trade_value_lag_2", "trade_value_lag_3"]).to_numpy()
+    )
     version = timezone.now().strftime("%Y%m%d%H%M%S")
     artifact_path = ARTIFACT_ROOT / f"forecast-{version}.joblib"
     checksum = save_artifact(model, artifact_path)
-    metrics = {"candidate": report, "baseline": baseline_report}
+    metrics = {
+        "candidate": report,
+        "baseline": baseline_report,
+        "test_candidate": grouped_evaluation(test, test_actual_usd, test_predictions),
+        "test_baseline": grouped_evaluation(test, test_actual_usd, test_baseline),
+    }
     evaluation_path = artifact_path.with_suffix(".evaluation.json")
     evaluation_path.write_text(json.dumps(metrics, indent=2), encoding="utf-8")
     model_version = ModelVersion.objects.create(
