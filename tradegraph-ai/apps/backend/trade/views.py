@@ -120,3 +120,66 @@ class TopProductsView(APIView):
 
 class TopCountriesView(TradePartnersView):
     pass
+
+
+class TradeMapView(APIView):
+    def get(self, request: Request) -> Response:
+        dataset, flows = filtered_flows(request.query_params)
+        try:
+            limit = min(max(int(request.query_params.get("top", 25)), 1), 100)
+        except ValueError:
+            limit = 25
+        rows = (
+            flows.values(
+                "exporter__iso3",
+                "exporter__name",
+                "exporter__latitude",
+                "exporter__longitude",
+                "importer__iso3",
+                "importer__name",
+                "importer__latitude",
+                "importer__longitude",
+            )
+            .annotate(trade_value_usd=Sum("trade_value_usd"))
+            .order_by("-trade_value_usd")[:limit]
+        )
+        data = [
+            {
+                "exporter": {
+                    "iso3": row["exporter__iso3"],
+                    "name": row["exporter__name"],
+                    "latitude": _number(row["exporter__latitude"]),
+                    "longitude": _number(row["exporter__longitude"]),
+                },
+                "importer": {
+                    "iso3": row["importer__iso3"],
+                    "name": row["importer__name"],
+                    "latitude": _number(row["importer__latitude"]),
+                    "longitude": _number(row["importer__longitude"]),
+                },
+                "trade_value_usd": _number(row["trade_value_usd"]),
+            }
+            for row in rows
+        ]
+        return _response(dataset, data)
+
+
+class TradeCompareView(APIView):
+    def get(self, request: Request) -> Response:
+        dataset, flows = filtered_flows(request.query_params)
+        rows = (
+            flows.values("year").annotate(trade_value_usd=Sum("trade_value_usd")).order_by("year")
+        )
+        values = [_number(row["trade_value_usd"]) or 0 for row in rows]
+        years = [row["year"] for row in rows]
+        from analytics.calculations import cagr, growth
+
+        data = {
+            "series": [
+                {"year": row["year"], "trade_value_usd": _number(row["trade_value_usd"])}
+                for row in rows
+            ],
+            "growth": growth(values[-1], values[-2]) if len(values) >= 2 else None,
+            "cagr": cagr(values[0], values[-1], years[-1] - years[0]) if len(values) >= 2 else None,
+        }
+        return _response(dataset, data)
