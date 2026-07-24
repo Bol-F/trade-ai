@@ -1,99 +1,113 @@
-# Running TradeGraph AI locally
+# Run TradeGraph AI locally
 
-This guide starts the complete MVP with Docker Compose and imports the bundled
-synthetic sample dataset. No paid API, external LLM, or full BACI download is
-required.
+The easiest development setup runs PostgreSQL and Redis in Docker, then runs
+Django and Next.js directly on your computer.
 
-## 1. Prerequisites
+## Install once
 
-Install:
+You need:
 
-- Git
-- Docker Desktop with its Linux container engine running
+- Docker Desktop
 - Python 3.12
-- [`uv`](https://docs.astral.sh/uv/)
+- [uv](https://docs.astral.sh/uv/)
 - Node.js 22 or newer
 
-GNU Make is optional. Windows users can use the included PowerShell runner.
-
-Confirm the main tools:
-
-```powershell
-git --version
-docker version
-docker compose version
-uv --version
-node --version
-npm --version
-```
-
-## 2. Clone and enter the application workspace
+Clone the project and enter the application folder:
 
 ```powershell
 git clone git@github.com:Bol-F/trade-ai.git
 cd trade-ai\tradegraph-ai
 ```
 
-The second command is important. `pyproject.toml`, `package.json`, `compose.yml`,
-and the Makefile are inside `tradegraph-ai`, not at the outer Git checkout root.
+All commands below run from the `tradegraph-ai` folder.
 
-## 3. Windows PowerShell setup
-
-PowerShell may block local scripts in some environments. Allow scripts for only
-the current terminal session if needed:
+Install Python and frontend dependencies:
 
 ```powershell
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-```
-
-Install dependencies, create `.env`, and start the infrastructure:
-
-```powershell
-.\scripts\dev.ps1 setup
-.\scripts\dev.ps1 up
-.\scripts\dev.ps1 migrate
-.\scripts\dev.ps1 import-sample
-```
-
-The `setup` command uses `uv sync` for Python and `npm ci` for the frontend.
-
-## 4. Linux and macOS setup
-
-From the `tradegraph-ai` directory:
-
-```bash
-cp .env.example .env
-make setup
-make up
-make migrate
-make import-sample
-```
-
-If GNU Make is unavailable, run the underlying commands:
-
-```bash
 uv sync --frozen
 npm run install:frontend
-docker compose up --build -d
-uv run python apps/backend/manage.py migrate
-uv run python apps/backend/manage.py import_sample
 ```
 
-## 5. Open the application
-
-- Web application: <http://localhost:3000>
-- API documentation: <http://localhost:8000/api/docs/>
-- OpenAPI schema: <http://localhost:8000/api/schema/>
-- Readiness endpoint: <http://localhost:8000/api/v1/health/ready>
-- Metrics: <http://localhost:8000/metrics>
-- MinIO console: <http://localhost:9001>
-
-## 6. Verify the local checkout
-
-Run these from `tradegraph-ai`:
+Create the local settings file:
 
 ```powershell
-uv run ruff check .
+Copy-Item .env.local.example .env.local
+```
+
+On Linux or macOS, use:
+
+```bash
+cp .env.local.example .env.local
+```
+
+Start PostgreSQL and Redis:
+
+```powershell
+docker compose --env-file .env.local up -d postgres redis
+```
+
+Create the database tables and import the sample:
+
+```powershell
+uv run --env-file .env.local python apps/backend/manage.py migrate
+uv run --env-file .env.local python apps/backend/manage.py import_sample
+```
+
+## Start the program
+
+Open two terminals in the `tradegraph-ai` folder.
+
+Terminal 1 — backend:
+
+```powershell
+uv run --env-file .env.local python apps/backend/manage.py runserver
+```
+
+Terminal 2 — frontend:
+
+```powershell
+npm run dev
+```
+
+Open <http://localhost:3000>.
+
+That is the normal daily workflow: start Docker Desktop, start PostgreSQL and
+Redis, then run the two commands above.
+
+## Useful links
+
+- Application: <http://localhost:3000>
+- API documentation: <http://localhost:8000/api/docs/>
+- API health: <http://localhost:8000/api/v1/health/ready>
+
+## Stop
+
+Stop Django and Next.js with `Ctrl+C` in their terminals. Stop the supporting
+containers with:
+
+```powershell
+docker compose --env-file .env.local stop postgres redis
+```
+
+## Run everything in Docker instead
+
+If you do not want to run Python and npm directly:
+
+```powershell
+Copy-Item .env.example .env
+docker compose up --build -d
+docker compose exec backend python manage.py import_sample
+```
+
+Open <http://localhost:3000>. Stop everything with:
+
+```powershell
+docker compose down
+```
+
+## Check the project
+
+```powershell
 uv run mypy .
 uv run pytest
 npm run lint
@@ -101,90 +115,26 @@ npm test
 npm run build
 ```
 
-Windows users can run the combined checks with:
+## Common errors
 
-```powershell
-.\scripts\dev.ps1 lint
-.\scripts\dev.ps1 test
-```
+### `mypy` or `package.json` was not found
 
-Linux and macOS users can run:
-
-```bash
-make lint
-make test
-```
-
-## 7. Common operations
-
-Windows PowerShell:
-
-```powershell
-.\scripts\dev.ps1 logs
-.\scripts\dev.ps1 down
-.\scripts\dev.ps1 import-baci -File C:\data\BACI_HS92.zip -Version 2024
-.\scripts\dev.ps1 validate-dataset -Version 2024
-.\scripts\dev.ps1 activate-dataset -Version 2024
-```
-
-GNU Make:
-
-```bash
-make logs
-make down
-make import-baci FILE=/data/BACI_HS92.zip VERSION=2024
-make validate-dataset VERSION=2024
-make activate-dataset VERSION=2024
-```
-
-## 8. Troubleshooting
-
-### `uv run mypy .` says mypy was not found
-
-You are probably in the outer repository directory. Enter the application
-workspace and synchronize its environment:
+You are probably in the outer `trade-ai` folder. Run:
 
 ```powershell
 cd tradegraph-ai
-uv sync --frozen
-uv run mypy .
 ```
 
-### npm reports that `package.json` cannot be found
+Then retry the command.
 
-Run npm from `tradegraph-ai`, not the outer checkout root:
+### Django cannot connect to PostgreSQL or Redis
+
+Make sure Docker Desktop is running, then start the services:
 
 ```powershell
-cd tradegraph-ai
-npm run install:frontend
-npm test
+docker compose --env-file .env.local up -d postgres redis
 ```
 
-The project-level npm commands forward to `apps/frontend`.
+### `make` is not recognized
 
-### `make` is not recognized on Windows
-
-Make is not installed with Windows. Use:
-
-```powershell
-.\scripts\dev.ps1 setup
-.\scripts\dev.ps1 up
-```
-
-### Docker commands cannot connect to the engine
-
-Start Docker Desktop, select Linux containers, wait until the engine reports it
-is running, and retry:
-
-```powershell
-docker compose up --build -d
-```
-
-### Reset only the project containers
-
-```powershell
-docker compose down
-docker compose up --build -d
-```
-
-Persistent PostgreSQL, Redis, and MinIO volumes are retained by default.
+You do not need Make for this guide. Use the commands above directly.
