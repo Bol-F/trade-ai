@@ -5,6 +5,7 @@ requires-python = "==3.12.*"
 [manifest]
 members = [
     "tradegraph-ai",
+    "tradegraph-data-pipeline",
     "tradegraph-ml",
 ]
 
@@ -844,6 +845,7 @@ dependencies = [
     { name = "python-json-logger" },
     { name = "redis" },
     { name = "scikit-learn" },
+    { name = "tradegraph-data-pipeline" },
     { name = "tradegraph-ml" },
 ]
 
@@ -876,6 +878,7 @@ requires-dist = [
     { name = "python-json-logger", specifier = ">=3.2,<4" },
     { name = "redis", specifier = ">=5.2,<6" },
     { name = "scikit-learn", specifier = ">=1.9.0" },
+    { name = "tradegraph-data-pipeline", editable = "packages/data_pipeline" },
     { name = "tradegraph-ml", editable = "packages/ml" },
 ]
 
@@ -888,6 +891,21 @@ dev = [
     { name = "pytest-cov", specifier = ">=7.1.0" },
     { name = "pytest-django", specifier = ">=4.9,<5" },
     { name = "ruff", specifier = ">=0.9,<1" },
+]
+
+[[package]]
+name = "tradegraph-data-pipeline"
+version = "0.1.0"
+source = { editable = "packages/data_pipeline" }
+dependencies = [
+    { name = "polars" },
+    { name = "pyarrow" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "polars", specifier = ">=1.30,<2" },
+    { name = "pyarrow", specifier = ">=19,<23" },
 ]
 
 [[package]]

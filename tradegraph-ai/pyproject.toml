@@ -20,6 +20,7 @@ dependencies = [
   "python-json-logger>=3.2,<4",
   "redis>=5.2,<6",
   "scikit-learn>=1.9.0",
+  "tradegraph-data-pipeline",
   "tradegraph-ml",
 ]
 
@@ -39,10 +40,12 @@ package = false
 
 [tool.uv.workspace]
 members = [
+    "packages/data_pipeline",
     "packages/ml",
 ]
 
 [tool.uv.sources]
+tradegraph-data-pipeline = { workspace = true, editable = true }
 tradegraph-ml = { workspace = true, editable = true }
 
 [tool.ruff]

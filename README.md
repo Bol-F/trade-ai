@@ -70,14 +70,17 @@ MinIO provides S3-compatible local object storage.
 
 See **[RUN_LOCAL.md](RUN_LOCAL.md)** for the short local setup.
 
-After one-time setup, normal development uses two commands:
+From this repository root, the frontend now starts with:
 
 ```powershell
-# Terminal 1: Django API
-uv run --env-file .env.local python apps/backend/manage.py runserver
-
-# Terminal 2: Next.js frontend
 npm run dev
+```
+
+After one-time setup, backend development uses:
+
+```powershell
+cd tradegraph-ai
+uv run --env-file .env.local python apps/backend/manage.py runserver
 ```
 
 The application opens at <http://localhost:3000> and API documentation is at

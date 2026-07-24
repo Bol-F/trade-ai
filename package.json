@@ -1,0 +1,11 @@
+{
+  "name": "tradegraph-ai-repository",
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix tradegraph-ai run dev",
+    "build": "npm --prefix tradegraph-ai run build",
+    "lint": "npm --prefix tradegraph-ai run lint",
+    "test": "npm --prefix tradegraph-ai test",
+    "install:frontend": "npm --prefix tradegraph-ai run install:frontend"
+  }
+}
