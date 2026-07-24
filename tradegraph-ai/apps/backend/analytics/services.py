@@ -4,9 +4,11 @@ import statistics
 from collections import defaultdict
 from typing import Any, cast
 
+import numpy as np
 from catalog.models import Product
 from django.db.models import Avg, Count, QuerySet, Sum
 from trade.models import AnnualTradeFlow
+from tradegraph_ml.anomalies.isolation import score_anomaly_features
 
 from analytics.calculations import cagr, exposure_components, growth, hhi, robust_z_scores
 
@@ -78,6 +80,20 @@ def anomaly_data(flows: QuerySet[AnnualTradeFlow]) -> list[dict[str, Any]]:
         .values("year")
         .annotate(count=Count("exporter", distinct=True))
     }
+    supplier_shares: dict[int, float] = {}
+    for year in [row["year"] for row in series]:
+        supplier_values = list(
+            flows.filter(year=year)
+            .values("exporter")
+            .annotate(value=Sum("trade_value_usd"))
+            .values_list("value", flat=True)
+        )
+        supplier_total = sum(float(value) for value in supplier_values)
+        supplier_shares[year] = (
+            max(float(value) for value in supplier_values) / supplier_total
+            if supplier_values and supplier_total
+            else 0
+        )
     changes = [0.0]
     for index in range(1, len(values)):
         changes.append(growth(values[index], values[index - 1]) or 0.0)
@@ -130,6 +146,27 @@ def anomaly_data(flows: QuerySet[AnnualTradeFlow]) -> list[dict[str, Any]]:
                 ),
             }
         )
+    feature_rows = []
+    for index, row in enumerate(series):
+        previous_year = series[index - 1]["year"] if index else row["year"]
+        feature_rows.append(
+            [
+                changes[index],
+                z_scores[index - 1] if index else 0,
+                growth(quantities[index], quantities[index - 1]) or 0 if index else 0,
+                growth(unit_rows.get(row["year"], 0), unit_rows.get(previous_year, 0)) or 0,
+                supplier_shares.get(row["year"], 0) - supplier_shares.get(previous_year, 0),
+                changes[index],
+            ]
+        )
+    ml_scores = (
+        score_anomaly_features(np.asarray(feature_rows, dtype=float))
+        if len(feature_rows) >= 2
+        else np.zeros(len(feature_rows))
+    )
+    for result, ml_score in zip(results, ml_scores, strict=True):
+        result["rule_based_score"] = result["anomaly_score"]
+        result["ml_anomaly_score"] = round(float(ml_score), 4)
     return results
 
 

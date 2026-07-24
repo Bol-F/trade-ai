@@ -59,6 +59,7 @@ services:
       - "8000:8000"
     volumes:
       - ./apps/backend:/app/apps/backend
+      - ml-artifacts:/app/artifacts/ml
     depends_on:
       postgres:
         condition: service_healthy
@@ -94,6 +95,8 @@ services:
       - path: .env
         required: false
     command: celery -A config worker --loglevel=info
+    volumes:
+      - ml-artifacts:/app/artifacts/ml
     depends_on:
       postgres:
         condition: service_healthy
@@ -118,3 +121,4 @@ volumes:
   postgres-data:
   redis-data:
   minio-data:
+  ml-artifacts:

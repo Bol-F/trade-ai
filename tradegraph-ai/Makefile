@@ -1,4 +1,4 @@
-.PHONY: setup up down logs migrate test lint format import-sample
+.PHONY: setup up down logs migrate test lint format import-sample build-features train-baseline train-forecast evaluate-models
 
 setup:
 	uv sync
@@ -19,6 +19,18 @@ migrate:
 
 import-sample:
 	uv run python apps/backend/manage.py import_sample
+
+build-features:
+	uv run python apps/backend/manage.py build_features
+
+train-baseline:
+	uv run python apps/backend/manage.py train_baseline
+
+train-forecast:
+	uv run python apps/backend/manage.py train_forecast
+
+evaluate-models:
+	uv run python apps/backend/manage.py evaluate_models
 
 test:
 	uv run pytest
