@@ -2,14 +2,14 @@ from django.urls import path
 from rest_framework.routers import SimpleRouter
 
 from analytics.views import (
+    AnalysisExportViewSet,
     AnomaliesView,
     ConcentrationView,
     CountryProfileView,
     ExposureView,
+    FavoriteViewSet,
     ProductProfileView,
     SavedAnalysisViewSet,
-    AnalysisExportViewSet,
-    FavoriteViewSet,
     SavedComparisonViewSet,
     WatchlistViewSet,
     WorkspaceView,

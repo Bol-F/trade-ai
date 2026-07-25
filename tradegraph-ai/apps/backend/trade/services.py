@@ -22,9 +22,7 @@ def filtered_flows(params: Any) -> tuple[DatasetVersion | None, QuerySet[AnnualT
         return None, AnnualTradeFlow.objects.none()
     requested_version = params.get("dataset_version")
     if requested_version and requested_version != dataset.version:
-        raise ValidationError(
-            {"dataset_version": "Only the active ready dataset may be queried."}
-        )
+        raise ValidationError({"dataset_version": "Only the active ready dataset may be queried."})
     queryset = AnnualTradeFlow.objects.filter(dataset_version=dataset)
     if value := params.get("importer"):
         if not re.fullmatch(r"[A-Za-z]{3}", str(value)):

@@ -49,9 +49,7 @@ def exposure_data(flows: QuerySet[AnnualTradeFlow]) -> dict[str, Any]:
     concentration = concentration_data(flows)
     series = yearly_series(flows)
     values = [float(row["value"] or 0) for row in series]
-    quantities = [
-        float(row["quantity"]) if row["quantity"] is not None else None for row in series
-    ]
+    quantities = [float(row["quantity"]) if row["quantity"] is not None else None for row in series]
     components = exposure_components(
         concentration["hhi"], values, concentration["supplier_count"], quantities
     )
@@ -74,9 +72,7 @@ def exposure_data(flows: QuerySet[AnnualTradeFlow]) -> dict[str, Any]:
 def anomaly_data(flows: QuerySet[AnnualTradeFlow]) -> list[dict[str, Any]]:
     series = yearly_series(flows)
     values = [float(row["value"] or 0) for row in series]
-    quantities = [
-        float(row["quantity"]) if row["quantity"] is not None else None for row in series
-    ]
+    quantities = [float(row["quantity"]) if row["quantity"] is not None else None for row in series]
     unit_rows = {
         row["year"]: float(row["unit_value"]) if row["unit_value"] is not None else None
         for row in flows.values("year").annotate(unit_value=Avg("unit_value_usd_per_ton"))
@@ -91,9 +87,7 @@ def anomaly_data(flows: QuerySet[AnnualTradeFlow]) -> list[dict[str, Any]]:
     # issued an additional query for every year in the requested range.
     supplier_values_by_year: dict[int, list[float]] = defaultdict(list)
     for row in (
-        flows.values("year", "exporter_id")
-        .annotate(value=Sum("trade_value_usd"))
-        .order_by()
+        flows.values("year", "exporter_id").annotate(value=Sum("trade_value_usd")).order_by()
     ):
         supplier_values_by_year[row["year"]].append(float(row["value"]))
     supplier_shares: dict[int, float] = {}
@@ -198,8 +192,7 @@ def country_profile(flows: QuerySet[AnnualTradeFlow], iso3: str) -> dict[str, An
     import_history = yearly_series(imports)
     values = [float(row["value"] or 0) for row in import_history]
     quantities = [
-        float(row["quantity"]) if row["quantity"] is not None else None
-        for row in import_history
+        float(row["quantity"]) if row["quantity"] is not None else None for row in import_history
     ]
     components = exposure_components(
         concentration["hhi"], values, concentration["supplier_count"], quantities

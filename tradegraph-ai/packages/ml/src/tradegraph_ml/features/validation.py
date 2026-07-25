@@ -9,10 +9,21 @@ import polars as pl
 from .trade import FEATURE_DATASET_VERSION_COLUMN, KEYS
 
 EXPECTED_COLUMNS = {
-    *KEYS, "year", "target", "trade_value_lag_1", "trade_value_lag_2",
-    "trade_value_lag_3", "quantity_lag_1", "growth_lag_1", "rolling_mean_3",
-    "rolling_std_3", "supplier_share", "supplier_count", "hhi",
-    "global_product_growth", FEATURE_DATASET_VERSION_COLUMN,
+    *KEYS,
+    "year",
+    "target",
+    "trade_value_lag_1",
+    "trade_value_lag_2",
+    "trade_value_lag_3",
+    "quantity_lag_1",
+    "growth_lag_1",
+    "rolling_mean_3",
+    "rolling_std_3",
+    "supplier_share",
+    "supplier_count",
+    "hhi",
+    "global_product_growth",
+    FEATURE_DATASET_VERSION_COLUMN,
 }
 
 
@@ -32,7 +43,9 @@ class FeatureValidationError(ValueError):
     pass
 
 
-def validate_feature_frame(frame: pl.DataFrame, expected_dataset_version: str | None = None) -> FeatureValidationReport:
+def validate_feature_frame(
+    frame: pl.DataFrame, expected_dataset_version: str | None = None
+) -> FeatureValidationReport:
     errors: list[str] = []
     warnings: list[str] = []
     missing = EXPECTED_COLUMNS - set(frame.columns)
@@ -53,15 +66,23 @@ def validate_feature_frame(frame: pl.DataFrame, expected_dataset_version: str | 
     invalid_numeric = [name for name in numeric if not frame.schema[name].is_numeric()]
     if invalid_numeric:
         errors.append(f"Numeric columns have invalid types: {', '.join(invalid_numeric)}")
-    missing_percentages = {name: round(frame[name].null_count() * 100 / max(frame.height, 1), 3) for name in frame.columns}
-    warnings.extend(f"{name} is {value}% missing." for name, value in missing_percentages.items() if value > 50)
+    missing_percentages = {
+        name: round(frame[name].null_count() * 100 / max(frame.height, 1), 3)
+        for name in frame.columns
+    }
+    warnings.extend(
+        f"{name} is {value}% missing." for name, value in missing_percentages.items() if value > 50
+    )
     if not invalid_numeric and np.isinf(frame.select(numeric).to_numpy().astype(float)).any():
         errors.append("Feature data contains infinite values.")
     if frame["target"].null_count():
         errors.append("Training target must be available for every feature row.")
     if (frame["trade_value_lag_1"] < 0).any() or (frame["quantity_lag_1"].drop_nulls() < 0).any():
         errors.append("Lagged value and quantity fields cannot be negative.")
-    if not frame["importer"].str.contains(r"^[A-Z]{3}$").all() or not frame["exporter"].str.contains(r"^[A-Z]{3}$").all():
+    if (
+        not frame["importer"].str.contains(r"^[A-Z]{3}$").all()
+        or not frame["exporter"].str.contains(r"^[A-Z]{3}$").all()
+    ):
         errors.append("Country identifiers must be ISO3-like uppercase codes.")
     if not frame["hs2"].str.contains(r"^\d{2}$").all():
         errors.append("Product identifiers must be two-digit HS2 codes.")
@@ -71,7 +92,9 @@ def validate_feature_frame(frame: pl.DataFrame, expected_dataset_version: str | 
     return FeatureValidationReport(not errors, errors, warnings, frame.height, missing_percentages)
 
 
-def require_valid_features(frame: pl.DataFrame, expected_dataset_version: str | None = None) -> FeatureValidationReport:
+def require_valid_features(
+    frame: pl.DataFrame, expected_dataset_version: str | None = None
+) -> FeatureValidationReport:
     report = validate_feature_frame(frame, expected_dataset_version)
     if not report.passed:
         raise FeatureValidationError("; ".join(report.errors))

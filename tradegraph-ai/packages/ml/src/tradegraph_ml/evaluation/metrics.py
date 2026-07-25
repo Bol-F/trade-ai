@@ -57,9 +57,13 @@ def grouped_evaluation(
     result: dict[str, Any] = {"global": evaluate(actual, predicted)}
     evaluated = evaluated.with_columns(
         pl.when(pl.col("year").count().over(["importer", "exporter", "hs2"]) < 5)
-        .then(pl.lit("short")).otherwise(pl.lit("long")).alias("history_length"),
+        .then(pl.lit("short"))
+        .otherwise(pl.lit("long"))
+        .alias("history_length"),
         pl.when((pl.col("actual") == 0).mean().over(["importer", "exporter", "hs2"]) >= 0.3)
-        .then(pl.lit("zero_heavy")).otherwise(pl.lit("stable")).alias("flow_type"),
+        .then(pl.lit("zero_heavy"))
+        .otherwise(pl.lit("stable"))
+        .alias("flow_type"),
     )
     for field in ("hs2", "importer", "exporter", "size_group", "history_length", "flow_type"):
         result[f"by_{field}"] = {

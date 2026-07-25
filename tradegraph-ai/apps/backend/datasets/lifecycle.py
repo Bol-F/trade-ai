@@ -54,9 +54,11 @@ def transition_dataset(dataset: DatasetVersion, target: str) -> DatasetVersion:
 
 @transaction.atomic
 def activate_ready_dataset(dataset: DatasetVersion) -> None:
-    locked = DatasetVersion.objects.select_for_update().select_related(
-        "source", "classification"
-    ).get(pk=dataset.pk)
+    locked = (
+        DatasetVersion.objects.select_for_update()
+        .select_related("source", "classification")
+        .get(pk=dataset.pk)
+    )
     if locked.status != DatasetVersion.Status.READY:
         raise InvalidDatasetTransition("Only a ready dataset can be activated.")
     if (

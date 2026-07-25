@@ -20,14 +20,18 @@ def dataset_meta(dataset: DatasetVersion | None) -> dict[str, str | int | None]:
 
 class DataSourceListView(APIView):
     def get(self, request: Request) -> Response:
-        dataset = DatasetVersion.objects.filter(
-            status=DatasetVersion.Status.READY, is_active=True
-        ).select_related("source").first()
+        dataset = (
+            DatasetVersion.objects.filter(status=DatasetVersion.Status.READY, is_active=True)
+            .select_related("source")
+            .first()
+        )
         sources = DataSource.objects.filter(is_enabled=True)
         serialized = DataSourceSerializer(sources, many=True).data
         latest_by_source = {
             item.source_id: item
-            for item in DatasetVersion.objects.filter(is_active=True).select_related("classification")
+            for item in DatasetVersion.objects.filter(is_active=True).select_related(
+                "classification"
+            )
         }
         current_year = timezone.now().year
         for source_data, source in zip(serialized, sources, strict=True):
@@ -42,26 +46,34 @@ class DataSourceListView(APIView):
                     label = "Delayed"
                 else:
                     label = "Stale"
-            source_data["active_dataset"] = ({
-                "version": version.version,
-                "classification": f"{version.classification.name} {version.classification.version}",
-                "imported_at": version.created_at,
-                "period_start": version.period_start,
-                "period_end": version.period_end,
-                "row_count": version.row_count,
-                "validation_status": version.status,
-                "freshness_label": label,
-                "known_limitations": version.metadata.get("known_limitations", []),
-                "attribution": source.license_name or source.name,
-            } if version else None)
+            source_data["active_dataset"] = (
+                {
+                    "version": version.version,
+                    "classification": (
+                        f"{version.classification.name} {version.classification.version}"
+                    ),
+                    "imported_at": version.created_at,
+                    "period_start": version.period_start,
+                    "period_end": version.period_end,
+                    "row_count": version.row_count,
+                    "validation_status": version.status,
+                    "freshness_label": label,
+                    "known_limitations": version.metadata.get("known_limitations", []),
+                    "attribution": source.license_name or source.name,
+                }
+                if version
+                else None
+            )
         return Response({"data": serialized, "meta": dataset_meta(dataset)})
 
 
 class DataFreshnessView(APIView):
     def get(self, request: Request) -> Response:
-        dataset = DatasetVersion.objects.filter(
-            status=DatasetVersion.Status.READY, is_active=True
-        ).select_related("source").first()
+        dataset = (
+            DatasetVersion.objects.filter(status=DatasetVersion.Status.READY, is_active=True)
+            .select_related("source")
+            .first()
+        )
         data = None
         if dataset:
             data = {
