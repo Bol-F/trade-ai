@@ -55,7 +55,15 @@ def test_atomic_activation_retains_previous_dataset_for_rollback() -> None:
         period_start=2017,
         period_end=2024,
         status=DatasetVersion.Status.READY,
+        checksum=previous.checksum,
+        row_count=previous.row_count,
+        storage_path=previous.storage_path,
     )
+    copies = list(AnnualTradeFlow.objects.filter(dataset_version=previous))
+    for flow in copies:
+        flow.pk = None
+        flow.dataset_version = candidate
+    AnnualTradeFlow.objects.bulk_create(copies)
     activate_dataset(candidate)
     previous.refresh_from_db()
     candidate.refresh_from_db()

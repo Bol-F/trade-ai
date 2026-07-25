@@ -3,6 +3,14 @@ import json
 from collections.abc import Mapping
 from typing import Any
 
+from prometheus_client import Counter
+
+ANALYTICS_CACHE_REQUESTS = Counter(
+    "tradegraph_analytics_cache_requests_total",
+    "Analytics cache lookups by endpoint and result.",
+    ("endpoint", "result"),
+)
+
 
 def analytics_cache_key(
     dataset_version: str,

@@ -50,8 +50,14 @@ class AnnualTradeFlow(models.Model):
         ]
         indexes = [
             models.Index(fields=("dataset_version", "year"), name="trade_dataset_year_idx"),
-            models.Index(fields=("exporter", "year"), name="trade_exporter_year_idx"),
-            models.Index(fields=("importer", "year"), name="trade_importer_year_idx"),
+            models.Index(
+                fields=("dataset_version", "exporter", "year"),
+                name="trade_ds_exporter_year_idx",
+            ),
+            models.Index(
+                fields=("dataset_version", "importer", "year"),
+                name="trade_ds_importer_year_idx",
+            ),
             models.Index(fields=("hs2_code", "year"), name="trade_hs2_year_idx"),
             models.Index(fields=("hs6_code", "year"), name="trade_hs6_year_idx"),
             models.Index(

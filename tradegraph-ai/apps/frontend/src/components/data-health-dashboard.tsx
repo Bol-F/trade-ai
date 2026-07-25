@@ -2,8 +2,25 @@
 
 import { useQuery } from "@tanstack/react-query"
 import { useAuth } from "@/components/auth-provider"
+import {
+  DataFreshnessBadge,
+  DatasetVersionBadge,
+  ErrorState,
+  KpiCard,
+  LoadingSkeleton,
+  PageHeader,
+} from "@/components/design-system"
 import { PageContainer } from "@/components/page-container"
+import { Badge } from "@/components/ui/badge"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { adminApi } from "@/lib/api"
+
+function statusVariant(status: string): "default" | "secondary" | "destructive" | "outline" {
+  if (["failed", "error", "rejected"].includes(status.toLowerCase())) return "destructive"
+  if (["active", "completed", "ready", "success"].includes(status.toLowerCase())) return "default"
+  return "secondary"
+}
 
 export function DataHealthDashboard() {
   const { user, isLoading: authLoading } = useAuth()
@@ -12,25 +29,98 @@ export function DataHealthDashboard() {
     queryFn: adminApi.dataHealth,
     enabled: user?.role === "admin",
   })
-  if (authLoading) return <PageContainer className="py-16"><div className="h-72 animate-pulse rounded-xl bg-muted" /></PageContainer>
-  if (!user || user.role !== "admin") return <PageContainer className="py-20"><h1 className="text-3xl font-semibold">Administrator access required</h1><p className="mt-3 text-muted-foreground">This operational view is restricted to administrators.</p></PageContainer>
-  if (query.isLoading) return <PageContainer className="py-16"><div className="h-72 animate-pulse rounded-xl bg-muted" /></PageContainer>
-  if (!query.data) return <PageContainer className="py-20"><h1 className="text-3xl font-semibold">Data health unavailable</h1></PageContainer>
+
+  if (authLoading) return <PageContainer className="py-10"><LoadingSkeleton rows={5} /></PageContainer>
+  if (!user || user.role !== "admin") {
+    return <PageContainer className="py-16"><ErrorState title="Administrator access required" description="This operational view is restricted to administrators." /></PageContainer>
+  }
+  if (query.isLoading) return <PageContainer className="py-10"><LoadingSkeleton rows={5} /></PageContainer>
+  if (query.isError || !query.data) {
+    return <PageContainer className="py-16"><ErrorState title="Data health unavailable" description="Operational status could not be retrieved. Retry after checking the API." /></PageContainer>
+  }
+
   const data = query.data
-  return <PageContainer className="py-10">
-    <p className="font-mono text-sm text-primary">Admin operations</p><h1 className="mt-2 text-4xl font-semibold">Data health</h1>
-    <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-      <Metric label="Active dataset" value={data.active_dataset?.version ?? "None"} />
-      <Metric label="Rows" value={(data.active_dataset?.row_count ?? 0).toLocaleString()} />
-      <Metric label="Fresh through" value={String(data.data_freshness ?? "—")} />
-      <Metric label="Active models" value={String(data.active_models)} />
-      <Metric label="Cache" value={data.cache_status} />
-    </div>
-    <Section title="Dataset versions"><table className="w-full text-left text-sm"><thead><tr><th className="p-3">Version</th><th>Status</th><th>Coverage</th><th>Rows</th><th>Active</th></tr></thead><tbody>{data.versions.map((row) => <tr key={`${row.source}-${row.version}`} className="border-t"><td className="p-3 font-mono">{row.source} / {row.version}</td><td>{row.status}</td><td>{row.period_start}–{row.period_end}</td><td>{row.row_count.toLocaleString()}</td><td>{row.is_active ? "Yes" : "No"}</td></tr>)}</tbody></table></Section>
-    <Section title={`Ingestion runs · ${data.failures} failures`}><table className="w-full text-left text-sm"><thead><tr><th className="p-3">Started</th><th>Dataset</th><th>Task</th><th>Status</th><th>Read / written</th><th>Error</th></tr></thead><tbody>{data.ingestion_runs.map((row) => <tr key={row.id} className="border-t"><td className="p-3">{new Date(row.started_at).toLocaleString()}</td><td>{row.dataset_version__version}</td><td>{row.task_name}</td><td>{row.status}</td><td>{row.records_read} / {row.records_written}</td><td className="max-w-64 truncate text-destructive">{row.error_message || "—"}</td></tr>)}</tbody></table></Section>
-    <Section title="Model versions"><table className="w-full text-left text-sm"><thead><tr><th className="p-3">Model</th><th>Task</th><th>Dataset</th><th>Status</th></tr></thead><tbody>{data.models.map((row) => <tr key={`${row.model_name}-${row.model_version}`} className="border-t"><td className="p-3 font-mono">{row.model_name}:{row.model_version}</td><td>{row.task_type}</td><td>{row.dataset_version__version}</td><td>{row.status}</td></tr>)}</tbody></table></Section>
-  </PageContainer>
+  const activeDataset = data.active_dataset
+  const health = data.failures > 0 ? "Attention needed" : activeDataset ? "Operational" : "No active dataset"
+
+  return (
+    <PageContainer className="py-8 sm:py-10">
+      <PageHeader
+        breadcrumbs={[{ label: "Admin" }, { label: "Data health" }]}
+        eyebrow="Admin operations"
+        title="Data health"
+        description="Dataset lifecycle, ingestion reliability, model activation, and cache status."
+        metadata={<><Badge variant={data.failures ? "destructive" : "default"}>{health}</Badge>{activeDataset && <DatasetVersionBadge version={activeDataset.version} />}{data.data_freshness && <DataFreshnessBadge year={data.data_freshness} />}</>}
+      />
+
+      <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+        <KpiCard label="Active dataset" value={activeDataset?.version ?? "None"} />
+        <KpiCard label="Active rows" value={(activeDataset?.row_count ?? 0).toLocaleString()} />
+        <KpiCard label="Failed runs" value={String(data.failures)} detail={data.failures ? "Investigate" : "Healthy"} />
+        <KpiCard label="Active models" value={String(data.active_models)} />
+        <KpiCard label="Cache" value={data.cache_status} />
+      </div>
+
+      {data.failures > 0 && (
+        <Card className="mt-6 border-destructive/40 bg-destructive/5">
+          <CardHeader><CardTitle className="text-base">Recommended action</CardTitle></CardHeader>
+          <CardContent className="text-sm text-muted-foreground">Review failed ingestion runs below, resolve the reported error, then validate and promote a healthy dataset version.</CardContent>
+        </Card>
+      )}
+
+      <HealthTable title="Dataset versions" caption="Available dataset versions and their promotion state.">
+        <TableHeader><TableRow><TableHead>Version</TableHead><TableHead>Status</TableHead><TableHead>Coverage</TableHead><TableHead className="text-right">Rows</TableHead><TableHead>Active</TableHead></TableRow></TableHeader>
+        <TableBody>{data.versions.map((row) => (
+          <TableRow key={`${row.source}-${row.version}`}>
+            <TableCell className="font-mono">{row.source} / {row.version}</TableCell>
+            <TableCell><Badge variant={statusVariant(row.status)}>{row.status}</Badge></TableCell>
+            <TableCell>{row.period_start}–{row.period_end}</TableCell>
+            <TableCell className="text-right font-mono">{row.row_count.toLocaleString()}</TableCell>
+            <TableCell>{row.is_active ? <Badge>Active</Badge> : "No"}</TableCell>
+          </TableRow>
+        ))}</TableBody>
+      </HealthTable>
+
+      <HealthTable title="Ingestion runs" caption="Recent data ingestion activity, record counts, and errors.">
+        <TableHeader><TableRow><TableHead>Started</TableHead><TableHead>Dataset</TableHead><TableHead>Task</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Read / written / rejected</TableHead><TableHead>Error</TableHead></TableRow></TableHeader>
+        <TableBody>{data.ingestion_runs.map((row) => (
+          <TableRow key={row.id}>
+            <TableCell className="whitespace-nowrap">{new Date(row.started_at).toLocaleString()}</TableCell>
+            <TableCell className="font-mono">{row.dataset_version__version}</TableCell>
+            <TableCell>{row.task_name}</TableCell>
+            <TableCell><Badge variant={statusVariant(row.status)}>{row.status}</Badge></TableCell>
+            <TableCell className="text-right font-mono">{row.records_read} / {row.records_written} / {row.records_rejected}</TableCell>
+            <TableCell className="max-w-72 text-destructive">{row.error_message || "—"}</TableCell>
+          </TableRow>
+        ))}</TableBody>
+      </HealthTable>
+
+      <HealthTable title="Model versions" caption="Registered analytical model versions and activation state.">
+        <TableHeader><TableRow><TableHead>Model</TableHead><TableHead>Task</TableHead><TableHead>Dataset</TableHead><TableHead>Status</TableHead><TableHead>Created</TableHead></TableRow></TableHeader>
+        <TableBody>{data.models.map((row) => (
+          <TableRow key={`${row.model_name}-${row.model_version}`}>
+            <TableCell className="font-mono">{row.model_name}:{row.model_version}</TableCell>
+            <TableCell>{row.task_type}</TableCell>
+            <TableCell className="font-mono">{row.dataset_version__version}</TableCell>
+            <TableCell><Badge variant={statusVariant(row.status)}>{row.status}</Badge></TableCell>
+            <TableCell>{new Date(row.created_at).toLocaleDateString()}</TableCell>
+          </TableRow>
+        ))}</TableBody>
+      </HealthTable>
+    </PageContainer>
+  )
 }
 
-function Metric({ label, value }: { label: string; value: string }) { return <div className="rounded-xl border bg-card p-4"><p className="text-xs uppercase text-muted-foreground">{label}</p><p className="mt-2 font-mono text-xl font-semibold">{value}</p></div> }
-function Section({ title, children }: { title: string; children: React.ReactNode }) { return <section className="mt-6 overflow-x-auto rounded-xl border bg-card"><h2 className="p-4 font-semibold">{title}</h2>{children}</section> }
+function HealthTable({ title, caption, children }: { title: string; caption: string; children: React.ReactNode }) {
+  return (
+    <Card className="mt-6 overflow-hidden">
+      <CardHeader><CardTitle>{title}</CardTitle></CardHeader>
+      <CardContent className="overflow-x-auto p-0">
+        <Table>
+          <caption className="sr-only">{caption}</caption>
+          {children}
+        </Table>
+      </CardContent>
+    </Card>
+  )
+}

@@ -1,0 +1,15 @@
+{
+  "model_card_schema": "1.0",
+  "model": "trade_forecast",
+  "version": "forecast-v2",
+  "purpose": "Next-year bilateral HS2 trade-value decision support",
+  "algorithms": ["ridge", "hist_gradient_boosting", "three_year_moving_average_fallback"],
+  "target": "log1p(next_calendar_year_trade_value_usd)",
+  "feature_schema_version": "forecast-v2",
+  "validation": "chronological_holdout_and_expanding_window",
+  "required_metrics": ["mae", "rmse", "smape", "median_absolute_error", "weighted_absolute_error"],
+  "interval": {"coverage": 0.95, "method": "validation_residual_normal_approximation"},
+  "supported_use": ["annual_trade_scenario_exploration"],
+  "unsupported_use": ["guaranteed_projection", "causal_inference", "fraud_classification"],
+  "limitations": ["structural_breaks", "sparse_flows", "reporting_changes", "classification_changes"]
+}

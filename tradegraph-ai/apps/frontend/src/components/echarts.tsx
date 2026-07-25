@@ -3,7 +3,7 @@
 import { init, type EChartsOption } from "echarts"
 import { useEffect, useRef } from "react"
 
-export function EChart({ option }: { option: EChartsOption }) {
+export function EChart({ option, ariaLabel = "Data chart" }: { option: EChartsOption; ariaLabel?: string }) {
   const element = useRef<HTMLDivElement>(null)
   useEffect(() => {
     if (!element.current) return
@@ -16,5 +16,5 @@ export function EChart({ option }: { option: EChartsOption }) {
       chart.dispose()
     }
   }, [option])
-  return <div ref={element} className="h-[340px] w-full" role="img" aria-label="Annual trade value chart" />
+  return <div ref={element} className="h-[340px] w-full" role="img" aria-label={ariaLabel} />
 }

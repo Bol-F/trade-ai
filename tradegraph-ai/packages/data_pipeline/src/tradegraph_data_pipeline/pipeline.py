@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from catalog.models import Country, Product
+from datasets.lifecycle import transition_dataset
 from datasets.models import DatasetVersion, IngestionRun
 from django.utils import timezone
 
@@ -32,9 +33,9 @@ def calculate_checksum(path: Path) -> str:
 def run_pipeline(csv_path: Path, dataset: DatasetVersion, storage_root: Path) -> PipelineResult:
     run = IngestionRun.objects.create(dataset_version=dataset, task_name="import_baci_sample")
     try:
-        dataset.status = DatasetVersion.Status.VALIDATING
+        transition_dataset(dataset, DatasetVersion.Status.VALIDATING)
         dataset.checksum = calculate_checksum(csv_path)
-        dataset.save(update_fields=["status", "checksum"])
+        dataset.save(update_fields=["checksum"])
         frame = read_baci_csv(csv_path)
         validation = validate_baci(
             frame,
@@ -45,13 +46,12 @@ def run_pipeline(csv_path: Path, dataset: DatasetVersion, storage_root: Path) ->
                 )
             ),
         )
-        dataset.status = DatasetVersion.Status.PROCESSING
-        dataset.save(update_fields=["status"])
+        transition_dataset(dataset, DatasetVersion.Status.PROCESSING)
         normalized = normalize_baci(frame)
         destination = storage_root / dataset.version
         write_partitioned_parquet(normalized, destination)
         written = load_trade_flows(normalized, dataset)
-        dataset.status = DatasetVersion.Status.READY
+        transition_dataset(dataset, DatasetVersion.Status.READY)
         dataset.row_count = validation.row_count
         dataset.period_start = validation.min_year
         dataset.period_end = validation.max_year
@@ -72,8 +72,12 @@ def run_pipeline(csv_path: Path, dataset: DatasetVersion, storage_root: Path) ->
         run.save()
         return PipelineResult(validation.row_count, written, dataset.checksum, str(destination))
     except Exception as exc:
-        dataset.status = DatasetVersion.Status.FAILED
-        dataset.save(update_fields=["status"])
+        if dataset.status in {
+            DatasetVersion.Status.DOWNLOADING,
+            DatasetVersion.Status.VALIDATING,
+            DatasetVersion.Status.PROCESSING,
+        }:
+            transition_dataset(dataset, DatasetVersion.Status.FAILED)
         run.status = IngestionRun.Status.FAILED
         run.error_message = str(exc)
         run.finished_at = timezone.now()

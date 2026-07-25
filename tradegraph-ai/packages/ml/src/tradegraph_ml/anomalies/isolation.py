@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import cast
+from typing import Any, cast
 
 import numpy as np
 from sklearn.ensemble import IsolationForest
@@ -35,18 +35,44 @@ def score_anomaly_features(features: np.ndarray) -> np.ndarray:
     return anomaly_scores(train_isolation_forest(values), values)
 
 
-def evaluate_synthetic_anomalies(features: np.ndarray) -> dict[str, float | int]:
+def evaluate_synthetic_anomalies(features: np.ndarray) -> dict[str, Any]:
     normal = np.asarray(features, dtype=float)
-    spread = np.std(normal, axis=0)
-    injected = normal[: max(1, len(normal) // 10)] + np.where(spread == 0, 10, spread * 8)
+    spread = np.where(np.std(normal, axis=0) == 0, 1, np.std(normal, axis=0))
+    base = normal[: max(1, len(normal) // 10)]
+    scenarios = {
+        "sudden_value_increase": (0, 15),
+        "sudden_value_decrease": (0, -15),
+        "supplier_disappearance": (4, -15),
+        "quantity_collapse": (2, -15),
+        "unit_value_spike": (3, 15),
+        "share_shift": (4, 15),
+    }
+    injected_parts = []
+    labels = []
+    for label, (column, multiplier) in scenarios.items():
+        part = base.copy() + spread * 8
+        part[:, column] += spread[column] * multiplier
+        injected_parts.append(part)
+        labels.extend([label] * len(part))
+    injected = np.vstack(injected_parts)
     combined = np.vstack([normal, injected])
     model = train_isolation_forest(normal)
     scores = anomaly_scores(model, combined)
-    top = np.argsort(scores)[-len(injected) :]
+    top = np.argsort(scores, kind="stable")[-len(injected) :]
     detected = sum(index >= len(normal) for index in top)
+    threshold = float(np.quantile(scores[: len(normal)], 0.95))
+    false_positive_rate = float(np.mean(scores[: len(normal)] > threshold))
+    per_scenario = {}
+    injected_scores = scores[len(normal):]
+    for label in scenarios:
+        selected = injected_scores[np.array(labels) == label]
+        per_scenario[label] = float(np.mean(selected > threshold))
     return {
         "injected_count": len(injected),
         "top_n_detected": detected,
         "recall_at_n": detected / len(injected),
+        "false_positive_rate": false_positive_rate,
+        "mean_precision_at_n": detected / len(injected),
         "stability_correlation": 1.0,
+        "scenario_detection_rates": per_scenario,
     }

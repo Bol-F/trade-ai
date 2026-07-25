@@ -4,9 +4,10 @@ import { useQuery } from "@tanstack/react-query"
 import Link from "next/link"
 import { PageContainer } from "@/components/page-container"
 import { catalogApi } from "@/lib/api"
+import { queryKeys } from "@/lib/query-options"
 
 export function CountryDetail({ iso3 }: { iso3: string }) {
-  const query = useQuery({ queryKey: ["country", iso3], queryFn: () => catalogApi.country(iso3) })
+  const query = useQuery({ queryKey: queryKeys.country(iso3), queryFn: () => catalogApi.country(iso3) })
   if (query.isLoading) return <DetailLoading />
   if (!query.data) return <DetailMissing back="/countries" />
   const country = query.data
@@ -14,7 +15,7 @@ export function CountryDetail({ iso3 }: { iso3: string }) {
 }
 
 export function ProductDetail({ code }: { code: string }) {
-  const query = useQuery({ queryKey: ["product", code], queryFn: () => catalogApi.product(code) })
+  const query = useQuery({ queryKey: queryKeys.product(code), queryFn: () => catalogApi.product(code) })
   if (query.isLoading) return <DetailLoading />
   if (!query.data) return <DetailMissing back="/products" />
   const product = query.data

@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from catalog.models import Country, Product
+from datasets.lifecycle import transition_dataset
 from datasets.models import DatasetVersion, IngestionRun
 from django.utils import timezone
 
@@ -43,8 +44,7 @@ def run_streaming_pipeline(
     )
     total_read = total_written = 0
     try:
-        dataset.status = DatasetVersion.Status.PROCESSING
-        dataset.save(update_fields=["status"])
+        transition_dataset(dataset, DatasetVersion.Status.VALIDATING)
         with materialized_csv(source, download_url) as csv_path:
             checksum = (
                 calculate_checksum(Path(source))
@@ -57,6 +57,7 @@ def run_streaming_pipeline(
             required = {"t", "i", "j", "k", "v", "q"}
             if required - set(lazy.collect_schema().names()):
                 raise ValueError("BACI file is missing required columns.")
+            transition_dataset(dataset, DatasetVersion.Status.PROCESSING)
             years = sorted(
                 int(value)
                 for value in lazy.select("t").unique().collect(engine="streaming")["t"].to_list()
@@ -87,7 +88,7 @@ def run_streaming_pipeline(
                     "last_year": year,
                 }
                 run.save(update_fields=["records_read", "records_written", "checkpoint"])
-            dataset.status = DatasetVersion.Status.READY
+            transition_dataset(dataset, DatasetVersion.Status.READY)
             dataset.checksum = checksum
             dataset.row_count = dataset.trade_flows.count()
             dataset.period_start = min(years)
@@ -107,8 +108,12 @@ def run_streaming_pipeline(
             run.save()
             return StreamingResult(total_read, total_written, years, checksum)
     except Exception as exc:
-        dataset.status = DatasetVersion.Status.FAILED
-        dataset.save(update_fields=["status"])
+        if dataset.status in {
+            DatasetVersion.Status.DOWNLOADING,
+            DatasetVersion.Status.VALIDATING,
+            DatasetVersion.Status.PROCESSING,
+        }:
+            transition_dataset(dataset, DatasetVersion.Status.FAILED)
         run.status = IngestionRun.Status.FAILED
         run.error_message = str(exc)
         run.finished_at = timezone.now()

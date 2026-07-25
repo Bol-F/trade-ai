@@ -3,12 +3,12 @@ from pathlib import Path
 from catalog.models import ProductClassification
 from django.conf import settings
 from django.core.management import call_command
-from django.db import transaction
 from django.utils import timezone
 from tradegraph_data_pipeline import PipelineResult, run_pipeline
 from tradegraph_data_pipeline.streaming import StreamingResult, run_streaming_pipeline
 
-from datasets.models import DatasetVersion, DataSource
+from datasets.lifecycle import activate_ready_dataset
+from datasets.models import DatasetVersion, DataSource, IngestionRun
 
 
 def import_sample_dataset() -> PipelineResult:
@@ -32,6 +32,23 @@ def import_sample_dataset() -> PipelineResult:
         classification=classification,
         defaults={"period_start": 2017, "period_end": 2024},
     )
+    if dataset.status == DatasetVersion.Status.READY:
+        IngestionRun.objects.create(
+            dataset_version=dataset,
+            task_name="import_baci_sample",
+            status=IngestionRun.Status.SUCCEEDED,
+            records_read=dataset.row_count,
+            records_written=0,
+            finished_at=timezone.now(),
+            checkpoint={"stage": "already_ready"},
+        )
+        activate_dataset(dataset)
+        return PipelineResult(
+            records_read=dataset.row_count,
+            records_written=0,
+            checksum=dataset.checksum,
+            storage_path=dataset.storage_path,
+        )
     result = run_pipeline(
         sample_dir / "baci_sample.csv",
         dataset,
@@ -68,6 +85,28 @@ def import_baci_dataset(
         "synthetic": False,
     }
     dataset.save(update_fields=["metadata"])
+    if dataset.status == DatasetVersion.Status.READY:
+        if expected_checksum and dataset.checksum.lower() != expected_checksum.lower():
+            raise ValueError("BACI checksum verification failed.")
+        IngestionRun.objects.create(
+            dataset_version=dataset,
+            task_name="import_baci",
+            status=IngestionRun.Status.SUCCEEDED,
+            records_read=0,
+            records_written=0,
+            finished_at=timezone.now(),
+            checkpoint={
+                "stage": "ready",
+                "completed_years": list(range(dataset.period_start, dataset.period_end + 1)),
+            },
+        )
+        activate_dataset(dataset)
+        return StreamingResult(
+            records_read=0,
+            records_written=0,
+            years_processed=list(range(dataset.period_start, dataset.period_end + 1)),
+            checksum=dataset.checksum,
+        )
     return run_streaming_pipeline(
         source_path,
         dataset,
@@ -77,18 +116,8 @@ def import_baci_dataset(
     )
 
 
-@transaction.atomic
 def activate_dataset(dataset: DatasetVersion) -> None:
-    if dataset.status != DatasetVersion.Status.READY:
-        raise ValueError("Only a ready dataset can be activated.")
-    DatasetVersion.objects.select_for_update().filter(
-        source=dataset.source,
-        classification=dataset.classification,
-        is_active=True,
-    ).exclude(pk=dataset.pk).update(is_active=False)
-    dataset.is_active = True
-    dataset.promoted_at = timezone.now()
-    dataset.save(update_fields=["is_active", "promoted_at"])
+    activate_ready_dataset(dataset)
 
 
 def validate_dataset(dataset: DatasetVersion) -> dict[str, int | str | bool]:

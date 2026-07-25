@@ -1,3 +1,3 @@
-from tradegraph_ml.recommendations.suppliers import rank_suppliers
+from tradegraph_ml.recommendations.suppliers import WEIGHTS, rank_suppliers, ranking_sensitivity
 
-__all__ = ["rank_suppliers"]
+__all__ = ["WEIGHTS", "rank_suppliers", "ranking_sensitivity"]

@@ -1,21 +1,34 @@
 # Security
 
-- JWT access/refresh tokens use HttpOnly cookies; refresh rotates and logout
-  revokes. Production cookies are Secure and SameSite.
-- CSRF middleware protects cookie-authenticated mutations. Browser tokens are
-  never stored in localStorage.
-- CORS is an explicit environment allowlist.
-- Login, anonymous and authenticated API throttles are enforced.
-- Uploads are limited to 10 MiB through Django; BACI imports use server-side paths
-  or configured URLs rather than HTTP uploads.
-- Admin data health requires the application admin role.
-- Authenticated mutations create audit events without request bodies or secrets.
-- Structured logs contain IDs/timing/status, never passwords, cookies, JWTs or API
-  keys.
-- CSV cells beginning with formula-control characters are neutralized for export.
-- Production enables HTTPS redirect, HSTS, content-type protection, same-origin
-  referrer policy and frame denial.
-- PostgreSQL statements have a production timeout.
+## Controls
 
-Run `uv run python scripts/check_secrets.py` before release. Rotate any credential
-immediately if it is ever committed; rewriting Git history is not sufficient alone.
+- JWT access and rotating refresh tokens use HttpOnly cookies; production cookies are
+  Secure and SameSite. Unsafe requests require CSRF tokens.
+- CORS is an explicit allowlist with credentials. Security, clickjacking, and content
+  headers are set by Django/Next production configuration.
+- Login and API throttles reduce brute force and abusive workloads.
+- Workspace, saved analysis, watchlist, comparison, and export querysets always filter
+  by authenticated owner. Export creation rechecks analysis ownership; downloads use
+  opaque IDs, owner authorization, expiration, private/no-store caching, and no public
+  object URL.
+- Admin endpoints require the admin role. Deactivated accounts fail authentication.
+- Serializers expose allowlisted fields, preventing owner/status/content mass assignment.
+- CSV cells beginning with `=`, `+`, `-`, `@`, tab, or carriage return are prefixed to
+  prevent spreadsheet formula injection.
+- External URLs come from administrator configuration, use bounded timeouts, and should
+  be restricted to HTTPS allowlisted hosts in production. Artifact and storage paths are
+  server-generated; user input must never become a filesystem path.
+- Structured logs contain identifiers, timing, and status—not passwords, cookies, JWTs,
+  API keys, Authorization headers, request bodies, private URLs, or export content.
+
+## Operational practice
+
+Rotate Django, database, source API, Redis, and object-storage secrets independently.
+Revoke old values, restart workloads, invalidate sessions when signing material changes,
+and verify health. Run `pip-audit`/`uv audit` and `npm audit` in CI, triage severity and
+exploitability, and pin remediated lockfiles. Review CORS/CSRF origins and admin accounts
+each release. Security events and object access should be retained according to policy.
+
+Known residual risks: statistical results can be misinterpreted; annual trade data can
+contain reporting errors; synchronous small exports are stored in PostgreSQL. Large
+exports require the authorized background-worker path before production-scale use.

@@ -3,9 +3,12 @@
 import { useState } from "react"
 import { useMutation } from "@tanstack/react-query"
 import type { EChartsOption } from "echarts"
+import { AlertTriangle, GitCompareArrows, LineChart } from "lucide-react"
+import { ChartCard, DataFreshnessBadge, DatasetVersionBadge, ErrorState, FilterBar, FilterSection, KpiCard, MetricExplanation, PageHeader } from "@/components/design-system"
 import { EChart } from "@/components/echarts"
 import { PageContainer } from "@/components/page-container"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { mlApi } from "@/lib/api"
@@ -18,42 +21,50 @@ export function ForecastDashboard() {
   const mutation = useMutation({ mutationFn: mlApi.forecast })
   const result = mutation.data
   const option: EChartsOption | undefined = result ? {
-    tooltip: { trigger: "axis" },
-    legend: { data: ["Historical", "Baseline", "Model"] },
-    xAxis: { type: "category", data: [...result.historical_values.map((point) => point.year), result.forecast.year] },
-    yAxis: { type: "value" },
+    tooltip: { trigger: "axis" }, legend: { data: ["Historical observations", "Naive baseline", "Active model"] },
+    xAxis: { type: "category", name: "Year", data: [...result.historical_values.map(point => point.year), result.forecast.year] },
+    yAxis: { type: "value", name: "Trade value (USD)" },
     series: [
-      { name: "Historical", type: "line", data: [...result.historical_values.map((point) => point.value), null] },
-      { name: "Baseline", type: "scatter", data: [...result.historical_values.map(() => null), result.baseline_forecast] },
-      { name: "Model", type: "scatter", data: [...result.historical_values.map(() => null), result.forecast.value] },
+      { name: "Historical observations", type: "line", symbolSize: 8, data: [...result.historical_values.map(point => point.value), null] },
+      { name: "Naive baseline", type: "scatter", symbolSize: 12, data: [...result.historical_values.map(() => null), result.baseline_forecast] },
+      { name: "Active model", type: "scatter", symbol: "diamond", symbolSize: 14, data: [...result.historical_values.map(() => null), result.forecast.value] },
     ],
   } : undefined
 
   return <PageContainer className="py-10">
-    <p className="font-mono text-sm text-primary">Locally trained · chronological validation</p>
-    <h1 className="mt-2 text-4xl font-semibold">Trade forecast</h1>
-    <p className="mt-3 max-w-3xl text-muted-foreground">Compare the active project-trained model with the retained three-year moving-average baseline.</p>
-    <form className="mt-8 grid gap-4 rounded-xl border bg-card p-5 sm:grid-cols-2 lg:grid-cols-5" onSubmit={(event) => { event.preventDefault(); mutation.mutate({ importer, exporter, hs2, year: Number(year) }) }}>
-      <Label>Importer<Input className="mt-2" maxLength={3} value={importer} onChange={(event) => setImporter(event.target.value.toUpperCase())} /></Label>
-      <Label>Exporter<Input className="mt-2" maxLength={3} value={exporter} onChange={(event) => setExporter(event.target.value.toUpperCase())} /></Label>
-      <Label>HS2<Input className="mt-2" maxLength={2} value={hs2} onChange={(event) => setHs2(event.target.value)} /></Label>
-      <Label>Forecast year<Input className="mt-2" inputMode="numeric" value={year} onChange={(event) => setYear(event.target.value)} /></Label>
-      <Button className="self-end" type="submit" disabled={mutation.isPending}>{mutation.isPending ? "Forecasting…" : "Run forecast"}</Button>
-    </form>
-    {mutation.isError && <p className="mt-6 rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-destructive">The forecast could not be generated. Import data and verify the selected trade lane.</p>}
+    <PageHeader eyebrow="Statistical decision support" title="Trade forecast" description="Compare historical observations, the retained moving-average baseline, and the active project-trained model. Forecasts are estimates, not guaranteed future values." breadcrumbs={[{ label: "Overview", href: "/" }, { label: "Forecast" }]} metadata={result && <><DatasetVersionBadge version={result.dataset_version} /><DataFreshnessBadge year={result.data_freshness} /></>} />
+    <FilterBar title="Forecast definition"><form onSubmit={event => { event.preventDefault(); mutation.mutate({ importer, exporter, hs2, year: Number(year) }) }}><FilterSection>
+      <Label>Importer ISO3<Input className="mt-2" maxLength={3} value={importer} onChange={event => setImporter(event.target.value.toUpperCase())} /></Label>
+      <Label>Exporter ISO3<Input className="mt-2" maxLength={3} value={exporter} onChange={event => setExporter(event.target.value.toUpperCase())} /></Label>
+      <Label>HS2 product<Input className="mt-2" maxLength={2} value={hs2} onChange={event => setHs2(event.target.value.replace(/\D/g, ""))} /></Label>
+      <Label>Forecast year<Input className="mt-2" inputMode="numeric" value={year} onChange={event => setYear(event.target.value)} /></Label>
+      <Button className="self-end" disabled={mutation.isPending}>{mutation.isPending ? "Calculating…" : "Run forecast"}</Button>
+    </FilterSection></form></FilterBar>
+    {mutation.isError && <div className="mt-6"><ErrorState title="Forecast unavailable" description="The selected lane may have insufficient history, or the active model artifact may be unavailable. Try another lane or review data health." /></div>}
     {result && option && <>
-      <div className="mt-6 grid gap-4 sm:grid-cols-3"><Metric label="Model forecast" value={money(result.forecast.value)} /><Metric label="Baseline" value={money(result.baseline_forecast)} /><Metric label="Fresh through" value={String(result.data_freshness)} /></div>
-      <section className="mt-6 rounded-xl border bg-card p-5"><h2 className="font-semibold">Historical and forecast values</h2><EChart option={option} /></section>
-      <div className="mt-6 grid gap-6 lg:grid-cols-3">
-        <section className="rounded-xl border bg-card p-5"><h2 className="font-semibold">Model metadata</h2><dl className="mt-4 grid grid-cols-2 gap-3 text-sm"><dt className="text-muted-foreground">Model</dt><dd>{result.model_name}</dd><dt className="text-muted-foreground">Version</dt><dd className="font-mono">{result.model_version}</dd><dt className="text-muted-foreground">Dataset</dt><dd>{result.dataset_version}</dd><dt className="text-muted-foreground">Main factors</dt><dd>{result.main_input_factors.join(", ")}</dd></dl></section>
-        <section className="rounded-xl border bg-card p-5"><h2 className="font-semibold">Evaluation metrics</h2>{Object.keys(result.metrics).length === 0 ? <p className="mt-4 text-sm text-muted-foreground">The retained baseline has no trained-model report.</p> : <pre className="mt-4 max-h-56 overflow-auto whitespace-pre-wrap font-mono text-xs text-muted-foreground">{JSON.stringify(result.metrics, null, 2)}</pre>}</section>
-        <section className="rounded-xl border bg-card p-5"><h2 className="font-semibold">Limitations</h2><p className="mt-4 text-sm leading-6 text-muted-foreground">This statistical forecast uses only the project dataset and historical trade features. It cannot anticipate policy changes, conflict, weather, reporting revisions, or other structural breaks. A baseline is used whenever no eligible active model is available.</p></section>
+      <div className="mt-6 grid gap-4 sm:grid-cols-3">
+        <KpiCard icon={LineChart} label="Active-model forecast" value={money(result.forecast.value)} detail={`${result.forecast.year} estimate`} />
+        <KpiCard icon={GitCompareArrows} label="Naive baseline" value={money(result.baseline_forecast)} detail="Three-year moving average when available" />
+        <KpiCard label="Model difference" value={percentDifference(result.forecast.value, result.baseline_forecast)} detail="Relative to baseline" />
       </div>
+      <div className="mt-6 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm">
+        <p className="font-medium">Approximate {Math.round(result.forecast.coverage_level * 100)}% prediction interval</p>
+        <p className="mt-1 font-mono">{money(result.forecast.lower_bound)} – {money(result.forecast.upper_bound)}</p>
+        <p className="mt-2 text-muted-foreground">This interval is uncertain, not guaranteed. Method: {result.forecast.interval_method}.</p>
+      </div>
+      {result.warnings.map(warning => <div role="status" key={warning.code} className="mt-3 rounded-lg border border-amber-500/30 p-3 text-sm"><strong>{warning.code.replaceAll("_", " ")}:</strong> {warning.message}</div>)}
+      <div className="mt-6"><ChartCard title="Observed and estimated trade value" description="Historical values are observations; the two final markers are alternative estimates." summary={`${result.historical_values.length} historical observations. The model estimate is ${money(result.forecast.value)} and baseline is ${money(result.baseline_forecast)}.`}><EChart option={option} ariaLabel="Historical trade values with naive baseline and active-model forecast" /></ChartCard></div>
+      <div className="mt-6 grid gap-6 lg:grid-cols-3">
+        <Card className="shadow-none"><CardHeader><CardTitle>Model identity</CardTitle></CardHeader><CardContent><dl><MetricExplanation term="Model">{result.model_name}</MetricExplanation><MetricExplanation term="Version"><span className="font-mono">{result.model_version}</span></MetricExplanation><MetricExplanation term="Training period">{formatPeriod(result.training_period)}</MetricExplanation><MetricExplanation term="Dataset"><span className="font-mono">{result.dataset_version}</span></MetricExplanation></dl></CardContent></Card>
+        <Card className="shadow-none"><CardHeader><CardTitle>Evidence and factors</CardTitle></CardHeader><CardContent className="text-sm"><p className="text-muted-foreground">{Object.keys(result.metrics).length ? "Validation and held-out test metrics are retained in the model registry." : "No trained-model report is available; this result uses the retained baseline."}</p><h3 className="mt-5 font-medium">Why this result</h3><ul className="mt-2 list-disc space-y-1 pl-5 text-muted-foreground">{result.explanations.map(explanation => <li key={explanation}>{explanation}</li>)}</ul><p className="mt-4 font-medium">{result.used_fallback ? "Quality fallback baseline" : "Active production model"}</p></CardContent></Card>
+        <Card className="border-amber-500/30 bg-amber-500/5 shadow-none"><CardHeader><CardTitle className="flex items-center gap-2"><AlertTriangle className="size-4" />Uncertainty and limitations</CardTitle></CardHeader><CardContent className="text-sm leading-6 text-muted-foreground">The interval is estimated from validation residuals and cannot anticipate policy changes, conflict, weather, reporting revisions, or structural breaks. Compare the forecast with the baseline and investigate the historical lane.</CardContent></Card>
+      </div>
+      <div className="mt-6 grid gap-3 sm:grid-cols-2">{result.factor_definitions.map(factor => <div key={factor.feature} className="rounded-lg border p-3 text-sm"><p className="font-medium">{factor.display_name}</p><p className="mt-1 text-muted-foreground">{factor.description} {factor.direction}</p><p className="mt-2 text-xs text-muted-foreground">Limitation: {factor.limitation}</p></div>)}</div>
+      <Card className="mt-6 shadow-none"><CardHeader><CardTitle>Prediction lineage</CardTitle></CardHeader><CardContent><dl className="grid gap-3 text-sm sm:grid-cols-2"><MetricExplanation term="Data source">{result.lineage.data_source}</MetricExplanation><MetricExplanation term="Feature dataset">{result.lineage.feature_dataset_version}</MetricExplanation><MetricExplanation term="Feature schema">{result.lineage.feature_schema_version}</MetricExplanation><MetricExplanation term="Inference time">{new Date(result.lineage.inference_timestamp).toLocaleString()}</MetricExplanation></dl></CardContent></Card>
     </>}
   </PageContainer>
 }
 
-function Metric({ label, value }: { label: string; value: string }) {
-  return <div className="rounded-xl border bg-card p-5"><p className="text-xs uppercase text-muted-foreground">{label}</p><p className="mt-2 font-mono text-2xl font-semibold">{value}</p></div>
-}
 function money(value: number) { return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", notation: "compact" }).format(value) }
+function percentDifference(value: number, baseline: number) { return baseline ? `${(((value - baseline) / baseline) * 100).toFixed(1)}%` : "Unavailable" }
+function formatPeriod(period: Record<string, unknown>) { return period.start && period.end ? `${String(period.start)}–${String(period.end)}` : "Not reported" }

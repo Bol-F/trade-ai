@@ -8,11 +8,12 @@ import { PageContainer } from "@/components/page-container"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { catalogApi } from "@/lib/api"
+import { queryKeys } from "@/lib/query-options"
 
 export function CountryTable() {
   const [draft, setDraft] = useState("")
   const [search, setSearch] = useState("")
-  const query = useQuery({ queryKey: ["countries", search], queryFn: () => catalogApi.countries(search) })
+  const query = useQuery({ queryKey: queryKeys.countries(search), queryFn: () => catalogApi.countries(search) })
   return <CatalogShell title="Countries" description="Search active economies by country name or ISO code." draft={draft} setDraft={setDraft} submit={() => setSearch(draft)}>
     {query.isLoading ? <LoadingRows /> : query.isError ? <ErrorState /> : query.data?.results.length === 0 ? <EmptyState /> :
       <div className="overflow-x-auto rounded-xl border"><table className="w-full min-w-[640px] text-sm"><thead className="bg-muted/60 text-left text-muted-foreground"><tr><th className="px-4 py-3">Country</th><th className="px-4 py-3">ISO</th><th className="px-4 py-3">Region</th><th className="px-4 py-3">Subregion</th></tr></thead><tbody>{query.data?.results.map(country => <tr key={country.iso3} className="border-t hover:bg-muted/30"><td className="px-4 py-4 font-medium"><Link className="hover:underline" href={`/countries/${country.iso3}`}>{country.name}</Link></td><td className="px-4 py-4 font-mono">{country.iso3}</td><td className="px-4 py-4">{country.region || "—"}</td><td className="px-4 py-4">{country.subregion || "—"}</td></tr>)}</tbody></table></div>}
@@ -22,7 +23,7 @@ export function CountryTable() {
 export function ProductTable() {
   const [draft, setDraft] = useState("")
   const [search, setSearch] = useState("")
-  const query = useQuery({ queryKey: ["products", search], queryFn: () => catalogApi.products(search) })
+  const query = useQuery({ queryKey: queryKeys.products(search), queryFn: () => catalogApi.products(search) })
   return <CatalogShell title="Products" description="Search HS92 product codes and descriptions. Leading zeros are significant." draft={draft} setDraft={setDraft} submit={() => setSearch(draft)}>
     {query.isLoading ? <LoadingRows /> : query.isError ? <ErrorState /> : query.data?.results.length === 0 ? <EmptyState /> :
       <div className="overflow-x-auto rounded-xl border"><table className="w-full min-w-[640px] text-sm"><thead className="bg-muted/60 text-left text-muted-foreground"><tr><th className="px-4 py-3">Code</th><th className="px-4 py-3">Product</th><th className="px-4 py-3">Level</th><th className="px-4 py-3">Parent</th></tr></thead><tbody>{query.data?.results.map(product => <tr key={product.code} className="border-t hover:bg-muted/30"><td className="px-4 py-4 font-mono font-medium"><Link className="hover:underline" href={`/products/${product.code}`}>{product.code}</Link></td><td className="px-4 py-4">{product.name}</td><td className="px-4 py-4">HS{product.level}</td><td className="px-4 py-4 font-mono">{product.parent_code || "—"}</td></tr>)}</tbody></table></div>}

@@ -6,7 +6,7 @@ from typing import Any, cast
 
 import numpy as np
 from catalog.models import Product
-from django.db.models import Avg, Count, QuerySet, Sum
+from django.db.models import Avg, Count, Q, QuerySet, Sum
 from trade.models import AnnualTradeFlow
 from tradegraph_ml.anomalies.isolation import score_anomaly_features
 
@@ -49,13 +49,18 @@ def exposure_data(flows: QuerySet[AnnualTradeFlow]) -> dict[str, Any]:
     concentration = concentration_data(flows)
     series = yearly_series(flows)
     values = [float(row["value"] or 0) for row in series]
-    quantities = [float(row["quantity"] or 0) for row in series]
+    quantities = [
+        float(row["quantity"]) if row["quantity"] is not None else None for row in series
+    ]
     components = exposure_components(
         concentration["hhi"], values, concentration["supplier_count"], quantities
     )
     return {
         "score": components.score,
         "components": components.as_dict(),
+        "component_explanations": components.explanations(),
+        "insufficient_history": components.insufficient_history,
+        "quantity_data_available": components.quantity_data_available,
         "methodology": (
             "Transparent trade supply exposure indicator; it is not a complete "
             "national-security or economic-risk score."
@@ -69,9 +74,11 @@ def exposure_data(flows: QuerySet[AnnualTradeFlow]) -> dict[str, Any]:
 def anomaly_data(flows: QuerySet[AnnualTradeFlow]) -> list[dict[str, Any]]:
     series = yearly_series(flows)
     values = [float(row["value"] or 0) for row in series]
-    quantities = [float(row["quantity"] or 0) for row in series]
+    quantities = [
+        float(row["quantity"]) if row["quantity"] is not None else None for row in series
+    ]
     unit_rows = {
-        row["year"]: float(row["unit_value"] or 0)
+        row["year"]: float(row["unit_value"]) if row["unit_value"] is not None else None
         for row in flows.values("year").annotate(unit_value=Avg("unit_value_usd_per_ton"))
     }
     supplier_counts = {
@@ -80,20 +87,19 @@ def anomaly_data(flows: QuerySet[AnnualTradeFlow]) -> list[dict[str, Any]]:
         .values("year")
         .annotate(count=Count("exporter", distinct=True))
     }
+    # Aggregate every year/supplier pair in one query. The previous implementation
+    # issued an additional query for every year in the requested range.
+    supplier_values_by_year: dict[int, list[float]] = defaultdict(list)
+    for row in (
+        flows.values("year", "exporter_id")
+        .annotate(value=Sum("trade_value_usd"))
+        .order_by()
+    ):
+        supplier_values_by_year[row["year"]].append(float(row["value"]))
     supplier_shares: dict[int, float] = {}
-    for year in [row["year"] for row in series]:
-        supplier_values = list(
-            flows.filter(year=year)
-            .values("exporter")
-            .annotate(value=Sum("trade_value_usd"))
-            .values_list("value", flat=True)
-        )
-        supplier_total = sum(float(value) for value in supplier_values)
-        supplier_shares[year] = (
-            max(float(value) for value in supplier_values) / supplier_total
-            if supplier_values and supplier_total
-            else 0
-        )
+    for year, supplier_values in supplier_values_by_year.items():
+        supplier_total = sum(supplier_values)
+        supplier_shares[year] = max(supplier_values) / supplier_total if supplier_total else 0
     changes = [0.0]
     for index in range(1, len(values)):
         changes.append(growth(values[index], values[index - 1]) or 0.0)
@@ -120,10 +126,14 @@ def anomaly_data(flows: QuerySet[AnnualTradeFlow]) -> list[dict[str, Any]]:
         for feature, current, previous in (
             (
                 "unusual_unit_value_change",
-                unit_rows.get(row["year"], 0),
-                unit_rows.get(series[index - 1]["year"], 0) if index else 0,
+                unit_rows.get(row["year"]),
+                unit_rows.get(series[index - 1]["year"]) if index else None,
             ),
-            ("unusual_quantity_change", quantities[index], quantities[index - 1] if index else 0),
+            (
+                "unusual_quantity_change",
+                quantities[index],
+                quantities[index - 1] if index else None,
+            ),
         ):
             delta = abs(growth(current, previous) or 0)
             if delta >= 0.5:
@@ -154,7 +164,7 @@ def anomaly_data(flows: QuerySet[AnnualTradeFlow]) -> list[dict[str, Any]]:
                 changes[index],
                 z_scores[index - 1] if index else 0,
                 growth(quantities[index], quantities[index - 1]) or 0 if index else 0,
-                growth(unit_rows.get(row["year"], 0), unit_rows.get(previous_year, 0)) or 0,
+                growth(unit_rows.get(row["year"]), unit_rows.get(previous_year)) or 0,
                 supplier_shares.get(row["year"], 0) - supplier_shares.get(previous_year, 0),
                 changes[index],
             ]
@@ -173,12 +183,41 @@ def anomaly_data(flows: QuerySet[AnnualTradeFlow]) -> list[dict[str, Any]]:
 def country_profile(flows: QuerySet[AnnualTradeFlow], iso3: str) -> dict[str, Any]:
     imports = flows.filter(importer__iso3=iso3)
     exports = flows.filter(exporter__iso3=iso3)
-    import_total = float(imports.aggregate(value=Sum("trade_value_usd"))["value"] or 0)
-    export_total = float(exports.aggregate(value=Sum("trade_value_usd"))["value"] or 0)
+    totals = flows.aggregate(
+        imports=Sum("trade_value_usd", filter=Q(importer__iso3=iso3)),
+        exports=Sum("trade_value_usd", filter=Q(exporter__iso3=iso3)),
+    )
+    import_total = float(totals["imports"] or 0)
+    export_total = float(totals["exports"] or 0)
     combined = flows.filter(importer__iso3=iso3) | flows.filter(exporter__iso3=iso3)
     product_rows = list(
         combined.values("hs2_code").annotate(value=Sum("trade_value_usd")).order_by("-value")[:5]
     )
+    concentration = concentration_data(imports)
+    history = yearly_series(combined)
+    import_history = yearly_series(imports)
+    values = [float(row["value"] or 0) for row in import_history]
+    quantities = [
+        float(row["quantity"]) if row["quantity"] is not None else None
+        for row in import_history
+    ]
+    components = exposure_components(
+        concentration["hhi"], values, concentration["supplier_count"], quantities
+    )
+    exposure = {
+        "score": components.score,
+        "components": components.as_dict(),
+        "component_explanations": components.explanations(),
+        "insufficient_history": components.insufficient_history,
+        "quantity_data_available": components.quantity_data_available,
+        "methodology": (
+            "Transparent trade supply exposure indicator; it is not a complete "
+            "national-security or economic-risk score."
+        ),
+        "hhi": concentration["hhi"],
+        "supplier_count": concentration["supplier_count"],
+        "volatility": components.trade_value_volatility,
+    }
     return {
         "iso3": iso3,
         "total_imports_usd": import_total,
@@ -187,11 +226,11 @@ def country_profile(flows: QuerySet[AnnualTradeFlow], iso3: str) -> dict[str, An
             {"code": row["hs2_code"], "trade_value_usd": float(row["value"])}
             for row in product_rows
         ],
-        "top_suppliers": concentration_data(imports)["suppliers"][:5],
+        "top_suppliers": concentration["suppliers"][:5],
         "top_destinations": partner_rows(exports, "importer")[:5],
-        "concentration": concentration_data(imports),
-        "exposure": exposure_data(imports),
-        "history": yearly_series(combined),
+        "concentration": concentration,
+        "exposure": exposure,
+        "history": history,
     }
 
 

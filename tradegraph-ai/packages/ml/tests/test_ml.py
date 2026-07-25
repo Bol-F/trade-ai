@@ -5,10 +5,11 @@ import numpy as np
 import polars as pl
 from sklearn.linear_model import Ridge
 from tradegraph_ml.anomalies import evaluate_synthetic_anomalies, train_isolation_forest
-from tradegraph_ml.evaluation import chronological_split, evaluate
-from tradegraph_ml.features import build_forecast_features
+from tradegraph_ml.evaluation import chronological_split, drift_report, evaluate, expanding_window_splits
+from tradegraph_ml.explainability import explanation_schema
+from tradegraph_ml.features import build_forecast_features, validate_feature_frame
 from tradegraph_ml.forecasting import RANDOM_SEED, moving_average_forecast, previous_year_forecast
-from tradegraph_ml.recommendations import rank_suppliers
+from tradegraph_ml.recommendations import rank_suppliers, ranking_sensitivity
 from tradegraph_ml.registry import artifact_checksum, load_artifact, save_artifact
 
 
@@ -106,3 +107,54 @@ def test_synthetic_anomalies_and_repeated_training_are_stable() -> None:
     second = train_isolation_forest(features).decision_function(features)
     assert report["recall_at_n"] >= 0.8
     assert np.array_equal(first, second)
+
+
+def test_missing_calendar_year_does_not_become_lag_one() -> None:
+    frame = flow_frame().filter(pl.col("year") != 2020)
+    features = build_forecast_features(frame)
+    assert features.filter(pl.col("year") == 2021)["trade_value_lag_1"].null_count() == 0 or features.filter(pl.col("year") == 2021).is_empty()
+    assert features.filter(pl.col("year") == 2019)["target"].null_count() == 0 or features.filter(pl.col("year") == 2019).is_empty()
+
+
+def test_feature_validation_blocks_duplicates_infinity_and_mixed_versions() -> None:
+    valid = build_forecast_features(flow_frame(), "dataset-v1")
+    assert validate_feature_frame(valid, "dataset-v1").passed
+    duplicate = pl.concat([valid, valid.head(1)])
+    assert not validate_feature_frame(duplicate, "dataset-v1").passed
+    infinite = valid.with_columns(pl.lit(float("inf")).alias("growth_lag_1"))
+    assert not validate_feature_frame(infinite, "dataset-v1").passed
+    mixed = valid.with_row_index().with_columns(
+        pl.when(pl.col("index") == 0).then(pl.lit("dataset-v2")).otherwise(pl.col("feature_dataset_version")).alias("feature_dataset_version")
+    ).drop("index")
+    assert not validate_feature_frame(mixed, "dataset-v1").passed
+
+
+def test_expanding_windows_are_strictly_chronological() -> None:
+    features = build_forecast_features(flow_frame())
+    splits = expanding_window_splits(features, minimum_training_years=2)
+    assert splits
+    assert all(cast(int, train["year"].max()) < cast(int, test["year"].min()) for train, test in splits)
+
+
+def test_drift_requires_review_but_never_auto_retrains() -> None:
+    report = drift_report({"trade_value": np.arange(100)}, {"trade_value": np.arange(100) + 1000})
+    assert report["requires_review"]
+    assert report["automatic_retraining"] is False
+
+
+def test_supplier_scores_and_sensitivity_are_bounded_and_deterministic() -> None:
+    candidates = [
+        {"country": "CHN", "recent_export_value": 1000, "observations": 4, "unit_value": None},
+        {"country": "DEU", "recent_export_value": 900, "observations": 8, "unit_value": 10},
+    ]
+    ranked = rank_suppliers(candidates, "UZB")
+    assert all(0 <= item["recommendation_score"] <= 100 for item in ranked)
+    assert ranked[0]["insufficient_history"] is True
+    sensitivity = ranking_sensitivity(candidates, "UZB")
+    assert 0 <= sensitivity["top_candidate_stability"] <= 1
+
+
+def test_explainability_schema_never_exposes_unlabelled_codes() -> None:
+    schema = explanation_schema(["trade_value_lag_1", "rolling_std_3", "unknown"])
+    assert len(schema) == 2
+    assert all({"display_name", "description", "unit", "direction", "limitation"} <= item.keys() for item in schema)

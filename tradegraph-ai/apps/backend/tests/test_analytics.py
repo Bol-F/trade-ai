@@ -33,7 +33,7 @@ def test_exposure_components_are_bounded_and_weighted() -> None:
         "low_supplier_count",
         "quantity_instability",
     }
-    assert result.negative_recent_trend == pytest.approx(0.2)
+    assert result.negative_recent_trend == pytest.approx(20)
     assert 0 <= result.score <= 100
 
 

@@ -1,26 +1,37 @@
 "use client"
 
-import { useMutation, useQuery } from "@tanstack/react-query"
 import { FormEvent, useMemo, useState } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
+import { useMutation, useQuery } from "@tanstack/react-query"
 import { BarChart3, Boxes, Globe2, TrendingUp } from "lucide-react"
-import { EChart } from "@/components/echarts"
 import { useAuth } from "@/components/auth-provider"
+import { ChartCard, DataFreshnessBadge, DatasetVersionBadge, EmptyState, ErrorState, FilterBar, FilterSection, KpiCard, LoadingSkeleton, PageHeader } from "@/components/design-system"
+import { EChart } from "@/components/echarts"
 import { PageContainer } from "@/components/page-container"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select } from "@/components/ui/select"
-import { catalogApi, savedAnalysesApi, tradeApi, type TradeFilters } from "@/lib/api"
 import { toTimeseriesOption } from "@/lib/chart-transform"
+import { catalogApi, savedAnalysesApi, tradeApi, type TradeFilters } from "@/lib/api"
+import { queryKeys } from "@/lib/query-options"
 
 const money = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", notation: "compact", maximumFractionDigits: 1 })
 const number = new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 })
 
 export function ExplorerDashboard() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const { user } = useAuth()
-  const [draft, setDraft] = useState<TradeFilters>({ start_year: "2017", end_year: "2024" })
-  const [filters, setFilters] = useState<TradeFilters>(draft)
-  const countries = useQuery({ queryKey: ["countries", "explorer"], queryFn: () => catalogApi.countries("") })
+  const initialFilters = useMemo<TradeFilters>(() => ({
+    importer: searchParams.get("importer") ?? "", exporter: searchParams.get("exporter") ?? "",
+    product: searchParams.get("product") ?? "", start_year: searchParams.get("start_year") ?? "2017",
+    end_year: searchParams.get("end_year") ?? "2024",
+  }), [searchParams])
+  const [draft, setDraft] = useState<TradeFilters>(initialFilters)
+  const [filters, setFilters] = useState<TradeFilters>(initialFilters)
+  const countries = useQuery({ queryKey: queryKeys.countries(), queryFn: () => catalogApi.countries("") })
   const overview = useQuery({ queryKey: ["trade-overview", filters], queryFn: () => tradeApi.overview(filters) })
   const timeseries = useQuery({ queryKey: ["trade-timeseries", filters], queryFn: () => tradeApi.timeseries(filters) })
   const partners = useQuery({ queryKey: ["trade-partners", filters], queryFn: () => tradeApi.partners(filters) })
@@ -28,52 +39,51 @@ export function ExplorerDashboard() {
   const chartOption = useMemo(() => toTimeseriesOption(timeseries.data?.data ?? []), [timeseries.data])
   const loading = overview.isLoading || timeseries.isLoading || partners.isLoading || products.isLoading
   const failed = overview.isError || timeseries.isError || partners.isError || products.isError
-  const saveAnalysis = useMutation({
-    mutationFn: () => savedAnalysesApi.create({
-      title: `Trade analysis ${new Date().toISOString().slice(0, 10)}`,
-      filters,
-      visualization: "explorer",
-    }),
-  })
+  const saveAnalysis = useMutation({ mutationFn: () => savedAnalysesApi.create({ title: `Trade analysis ${new Date().toISOString().slice(0, 10)}`, filters, visualization: "explorer" }) })
 
   function apply(event: FormEvent) {
-    event.preventDefault()
-    setFilters({ ...draft })
+    event.preventDefault(); setFilters({ ...draft })
+    const params = new URLSearchParams()
+    Object.entries(draft).forEach(([key, value]) => { if (value) params.set(key, value) })
+    router.replace(`/explorer?${params.toString()}`, { scroll: false })
+  }
+  function reset() {
+    const cleared = { start_year: "2017", end_year: "2024" }
+    setDraft(cleared); setFilters(cleared); router.replace("/explorer", { scroll: false })
   }
 
   return <PageContainer className="py-10 md:py-14">
-    <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
-      <div><p className="font-mono text-xs uppercase tracking-widest text-primary">Synthetic sample · BACI-compatible</p><h1 className="mt-3 text-4xl font-semibold tracking-tight">Trade Explorer</h1><p className="mt-3 max-w-2xl text-muted-foreground">Follow eight years of normalized sample flows from source CSV to analytical API.</p></div>
-      <div className="flex flex-col items-end gap-2">{overview.data?.meta.dataset_version && <p className="font-mono text-xs text-muted-foreground">Dataset {overview.data.meta.dataset_version} · through {overview.data.meta.source_period_end}</p>}{user && <Button variant="outline" onClick={() => saveAnalysis.mutate()} disabled={saveAnalysis.isPending}>{saveAnalysis.isSuccess ? "Analysis saved" : saveAnalysis.isPending ? "Saving…" : "Save analysis"}</Button>}</div>
-    </div>
-
-    <form onSubmit={apply} className="mt-8 grid gap-4 rounded-xl border bg-card p-5 sm:grid-cols-2 lg:grid-cols-5">
+    <PageHeader eyebrow="Core analysis workspace" title="Trade Explorer" description="Filter directed trade flows, review annual change, and compare partner and product composition without losing your selection."
+      breadcrumbs={[{ label: "Overview", href: "/" }, { label: "Explorer" }]}
+      actions={user && <Button variant="outline" onClick={() => saveAnalysis.mutate()} disabled={saveAnalysis.isPending}>{saveAnalysis.isSuccess ? "Analysis saved" : saveAnalysis.isPending ? "Saving…" : "Save analysis"}</Button>}
+      metadata={<><DatasetVersionBadge version={overview.data?.meta.dataset_version} /><DataFreshnessBadge year={overview.data?.meta.source_period_end} /></>} />
+    <FilterBar><form onSubmit={apply}><FilterSection>
       <Filter label="Importer"><Select value={draft.importer ?? ""} onChange={event => setDraft(value => ({ ...value, importer: event.target.value }))}><option value="">All importers</option>{countries.data?.results.map(country => <option key={country.iso3} value={country.iso3}>{country.name}</option>)}</Select></Filter>
       <Filter label="Exporter"><Select value={draft.exporter ?? ""} onChange={event => setDraft(value => ({ ...value, exporter: event.target.value }))}><option value="">All exporters</option>{countries.data?.results.map(country => <option key={country.iso3} value={country.iso3}>{country.name}</option>)}</Select></Filter>
-      <Filter label="HS2 product"><Input value={draft.product ?? ""} onChange={event => setDraft(value => ({ ...value, product: event.target.value.replace(/\D/g, "").slice(0, 2) }))} placeholder="e.g. 01" inputMode="numeric" /></Filter>
+      <Filter label="HS product code"><Input value={draft.product ?? ""} onChange={event => setDraft(value => ({ ...value, product: event.target.value.replace(/\D/g, "").slice(0, 6) }))} placeholder="HS2, HS4 or HS6" inputMode="numeric" /></Filter>
       <Filter label="Start year"><Input type="number" min="1900" max="2100" value={draft.start_year ?? ""} onChange={event => setDraft(value => ({ ...value, start_year: event.target.value }))} /></Filter>
-      <Filter label="End year"><div className="flex gap-2"><Input type="number" min="1900" max="2100" value={draft.end_year ?? ""} onChange={event => setDraft(value => ({ ...value, end_year: event.target.value }))} /><Button className="shrink-0">Apply</Button></div></Filter>
-    </form>
-
-    {failed ? <div role="alert" className="mt-8 rounded-xl border border-destructive/30 bg-destructive/10 p-6 text-destructive">Explorer data is unavailable. Run <code className="font-mono">make import-sample</code> and confirm the API is online.</div> :
-    loading ? <DashboardLoading /> : <>
-      <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Metric icon={BarChart3} label="Trade value" value={money.format(overview.data?.data.total_trade_value_usd ?? 0)} />
-        <Metric icon={Boxes} label="Quantity" value={`${number.format(overview.data?.data.total_quantity_tons ?? 0)} t`} />
-        <Metric icon={Globe2} label="Trade relationships" value={String(overview.data?.data.partner_count ?? 0)} />
-        <Metric icon={TrendingUp} label="Latest YoY change" value={overview.data?.data.yoy_change_percent == null ? "—" : `${overview.data.data.yoy_change_percent.toFixed(1)}%`} />
+      <Filter label="End year"><Input type="number" min="1900" max="2100" value={draft.end_year ?? ""} onChange={event => setDraft(value => ({ ...value, end_year: event.target.value }))} /></Filter>
+    </FilterSection><div className="mt-4 flex flex-wrap items-center gap-2"><Button>Apply filters</Button><Button type="button" variant="ghost" onClick={reset}>Reset</Button>{Object.entries(filters).filter(([, value]) => value).map(([key, value]) => <Badge variant="secondary" key={key}>{key.replace("_", " ")}: {value}</Badge>)}</div></form></FilterBar>
+    <div aria-live="polite" className="mt-8">{failed ? <ErrorState description="Explorer data is unavailable. Confirm that the API is online and an active dataset has been imported." /> : loading ? <LoadingSkeleton rows={4} /> : <>
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <KpiCard icon={BarChart3} label="Trade value" value={money.format(overview.data?.data.total_trade_value_usd ?? 0)} />
+        <KpiCard icon={Boxes} label="Reported quantity" value={`${number.format(overview.data?.data.total_quantity_tons ?? 0)} t`} detail="Missing quantities remain excluded" />
+        <KpiCard icon={Globe2} label="Trade relationships" value={String(overview.data?.data.partner_count ?? 0)} />
+        <KpiCard icon={TrendingUp} label="Latest YoY change" value={overview.data?.data.yoy_change_percent == null ? "—" : `${overview.data.data.yoy_change_percent.toFixed(1)}%`} />
       </div>
-      <section className="mt-6 rounded-xl border bg-card p-4 sm:p-6"><div className="mb-2"><h2 className="font-medium">Annual trade value</h2><p className="text-sm text-muted-foreground">USD, current filtered selection</p></div>{timeseries.data?.data.length ? <EChart option={chartOption} /> : <Empty />}</section>
+      <div className="mt-6"><ChartCard title="Annual trade value" description="USD, current filtered selection" summary={`${timeseries.data?.data.length ?? 0} annual observations are shown.`}>{timeseries.data?.data.length ? <EChart option={chartOption} ariaLabel="Annual trade value for the selected filters" /> : <EmptyState description="Adjust or clear filters to find reported trade flows." />}</ChartCard></div>
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
-        <Ranking title="Top partners" columns={["Partner", "Trade value"]} rows={(partners.data?.data ?? []).map(row => ({ id: row.iso3, cells: [<span key={row.iso3}>{row.name} <span className="font-mono text-xs text-muted-foreground">{row.iso3}</span></span>, money.format(row.trade_value_usd ?? 0)] }))} />
-        <Ranking title="Top products" columns={["HS6 product", "Trade value"]} rows={(products.data?.data ?? []).map(row => ({ id: row.code, cells: [<span key={row.code}><span className="font-mono">{row.code}</span> · {row.name}</span>, money.format(row.trade_value_usd ?? 0)] }))} />
+        <Ranking title="Top partners" caption="Highest-value partners for the selected direction and period" rows={(partners.data?.data ?? []).map(row => ({ id: row.iso3, label: `${row.name} (${row.iso3})`, value: money.format(row.trade_value_usd ?? 0) }))} />
+        <Ranking title="Top products" caption="Highest-value HS6 products for the selected flows" rows={(products.data?.data ?? []).map(row => ({ id: row.code, label: `${row.code} · ${row.name}`, value: money.format(row.trade_value_usd ?? 0) }))} />
       </div>
-    </>}
+      <section className="mt-8 border-t pt-6"><h2 className="font-semibold">How to read this analysis</h2><p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">Values are aggregated from the active dataset after applying every visible filter. Missing quantities are not treated as zero. Year-over-year change is unavailable when the previous value is missing or zero.</p></section>
+    </>}</div>
   </PageContainer>
 }
 
 function Filter({ label, children }: { label: string; children: React.ReactNode }) { return <Label className="block space-y-2"><span className="block">{label}</span>{children}</Label> }
-function Metric({ icon: Icon, label, value }: { icon: typeof BarChart3; label: string; value: string }) { return <div className="rounded-xl border bg-card p-5"><div className="flex items-center justify-between text-muted-foreground"><span className="text-sm">{label}</span><Icon className="size-4" /></div><p className="mt-5 font-mono text-2xl font-semibold">{value}</p></div> }
-function Ranking({ title, columns, rows }: { title: string; columns: string[]; rows: { id: string; cells: React.ReactNode[] }[] }) { return <section className="overflow-hidden rounded-xl border bg-card"><div className="p-5"><h2 className="font-medium">{title}</h2></div>{rows.length ? <div className="overflow-x-auto"><table className="w-full min-w-[420px] text-sm"><thead className="bg-muted/60 text-left text-muted-foreground"><tr>{columns.map(column => <th key={column} className="px-5 py-3">{column}</th>)}</tr></thead><tbody>{rows.map(row => <tr key={row.id} className="border-t"><td className="px-5 py-4">{row.cells[0]}</td><td className="px-5 py-4 text-right font-mono">{row.cells[1]}</td></tr>)}</tbody></table></div> : <Empty />}</section> }
-function Empty() { return <div className="p-10 text-center text-sm text-muted-foreground">No data matches these filters.</div> }
-function DashboardLoading() { return <div aria-label="Loading explorer" className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{[1,2,3,4].map(item => <div key={item} className="h-28 animate-pulse rounded-xl bg-muted" />)}</div> }
+function Ranking({ title, caption, rows }: { title: string; caption: string; rows: { id: string; label: string; value: string }[] }) {
+  return <section className="overflow-hidden rounded-xl border bg-card"><div className="p-5"><h2 className="font-medium">{title}</h2><p className="mt-1 text-xs text-muted-foreground">{caption}</p></div>
+    {rows.length ? <div className="overflow-x-auto"><table className="w-full min-w-[420px] text-sm"><caption className="sr-only">{caption}</caption><thead className="bg-muted/60 text-left text-muted-foreground"><tr><th scope="col" className="px-5 py-3">Name</th><th scope="col" className="px-5 py-3 text-right">Trade value</th></tr></thead><tbody>{rows.map(row => <tr key={row.id} className="border-t"><th scope="row" className="px-5 py-4 text-left font-normal">{row.label}</th><td className="px-5 py-4 text-right font-mono">{row.value}</td></tr>)}</tbody></table></div> : <div className="p-4"><EmptyState description="No rows match the current filters." /></div>}
+  </section>
+}

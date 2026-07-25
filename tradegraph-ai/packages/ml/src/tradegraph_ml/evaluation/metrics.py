@@ -40,6 +40,9 @@ def evaluate(actual: np.ndarray, predicted: np.ndarray) -> dict[str, float]:
         "rmse": float(root_mean_squared_error(actual, predicted)),
         "smape": float(smape),
         "median_absolute_error": float(median_absolute_error(actual, predicted)),
+        "weighted_absolute_error": float(
+            np.average(np.abs(predicted - actual), weights=np.maximum(actual, 1))
+        ),
     }
 
 
@@ -52,9 +55,29 @@ def grouped_evaluation(
         pl.col("actual").qcut([0.33, 0.66], labels=["small", "medium", "large"]).alias("size_group")
     )
     result: dict[str, Any] = {"global": evaluate(actual, predicted)}
-    for field in ("hs2", "importer", "size_group"):
+    evaluated = evaluated.with_columns(
+        pl.when(pl.col("year").count().over(["importer", "exporter", "hs2"]) < 5)
+        .then(pl.lit("short")).otherwise(pl.lit("long")).alias("history_length"),
+        pl.when((pl.col("actual") == 0).mean().over(["importer", "exporter", "hs2"]) >= 0.3)
+        .then(pl.lit("zero_heavy")).otherwise(pl.lit("stable")).alias("flow_type"),
+    )
+    for field in ("hs2", "importer", "exporter", "size_group", "history_length", "flow_type"):
         result[f"by_{field}"] = {
             str(group[0]): evaluate(subset["actual"].to_numpy(), subset["predicted"].to_numpy())
             for group, subset in evaluated.group_by(field)
         }
     return result
+
+
+def expanding_window_splits(
+    frame: pl.DataFrame, minimum_training_years: int = 3
+) -> list[tuple[pl.DataFrame, pl.DataFrame]]:
+    years = sorted(frame["year"].unique().to_list())
+    splits: list[tuple[pl.DataFrame, pl.DataFrame]] = []
+    for index in range(minimum_training_years, len(years)):
+        evaluation_year = years[index]
+        train = frame.filter(pl.col("year") < evaluation_year)
+        test = frame.filter(pl.col("year") == evaluation_year)
+        if not train.is_empty() and not test.is_empty():
+            splits.append((train, test))
+    return splits

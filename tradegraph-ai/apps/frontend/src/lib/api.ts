@@ -158,6 +158,29 @@ export const catalogApi = {
   product: (code: string) => apiRequest(`/products/${encodeURIComponent(code)}`, productSchema),
 }
 
+const dataSourcesSchema = z.object({
+  data: z.array(z.object({
+    code: z.string(),
+    name: z.string(),
+    homepage: z.string(),
+    license_name: z.string(),
+    requires_api_key: z.boolean(),
+    is_enabled: z.boolean(),
+    active_dataset: z.object({
+      version: z.string(), classification: z.string(), imported_at: z.string(),
+      period_start: z.number(), period_end: z.number(), row_count: z.number(),
+      validation_status: z.string(),
+      freshness_label: z.enum(["Current", "Delayed", "Stale", "Incomplete", "Unknown"]),
+      known_limitations: z.array(z.string()), attribution: z.string(),
+    }).nullable(),
+  })),
+  meta: metaSchema,
+})
+
+export const datasetsApi = {
+  sources: () => apiRequest("/data-sources", dataSourcesSchema),
+}
+
 export type TradeFilters = {
   importer?: string
   exporter?: string
@@ -201,6 +224,9 @@ const concentrationSchema = z.object({
 const exposureSchema = z.object({
   score: z.number(),
   components: z.record(z.string(), z.number()),
+  component_explanations: z.record(z.string(), z.string()),
+  insufficient_history: z.boolean(),
+  quantity_data_available: z.boolean(),
   methodology: z.string(),
   hhi: z.number(),
   supplier_count: z.number(),
@@ -265,7 +291,14 @@ export const analyticsApi = {
 const forecastSchema = z.object({
   request_id: z.string().uuid(),
   historical_values: z.array(z.object({ year: z.number(), value: z.number() })),
-  forecast: z.object({ year: z.number(), value: z.number() }),
+  forecast: z.object({
+    year: z.number(),
+    value: z.number(),
+    lower_bound: z.number(),
+    upper_bound: z.number(),
+    coverage_level: z.number(),
+    interval_method: z.string(),
+  }),
   baseline_forecast: z.number(),
   model_name: z.string(),
   model_version: z.string(),
@@ -273,7 +306,20 @@ const forecastSchema = z.object({
   training_period: z.record(z.string(), z.unknown()),
   metrics: z.record(z.string(), z.unknown()),
   main_input_factors: z.array(z.string()),
+  factor_definitions: z.array(z.object({
+    feature: z.string(), display_name: z.string(), description: z.string(),
+    unit: z.string(), direction: z.string(), limitation: z.string(),
+  })),
+  explanations: z.array(z.string()),
+  warnings: z.array(z.object({ code: z.string(), message: z.string() })),
+  used_fallback: z.boolean(),
   data_freshness: z.number(),
+  lineage: z.object({
+    data_source: z.string(), dataset_version: z.string(),
+    feature_dataset_version: z.string(), feature_schema_version: z.string(),
+    model_version: z.string(), training_period: z.record(z.string(), z.unknown()),
+    inference_timestamp: z.string(),
+  }),
 })
 const recommendationSchema = z.object({
   candidates: z.array(z.object({
@@ -368,6 +414,44 @@ export const savedAnalysesApi = {
       method: "POST",
       body: JSON.stringify({ ...payload, description: "" }),
     }),
+}
+
+const favoriteSchema = z.object({ id: z.string().uuid(), kind: z.enum(["country", "product"]), code: z.string(), label: z.string(), created_at: z.string() })
+const watchlistSchema = z.object({
+  id: z.string().uuid(), name: z.string(), importer: z.string(), exporter: z.string(),
+  product: z.string(), start_year: z.number(), end_year: z.number(),
+  created_at: z.string(), last_viewed_at: z.string().nullable(),
+})
+const comparisonSchema = z.object({
+  id: z.string().uuid(), name: z.string(), countries: z.array(z.string()),
+  suppliers: z.array(z.string()), product: z.string(), start_year: z.number(),
+  end_year: z.number(), created_at: z.string(),
+})
+const exportSchema = z.object({
+  id: z.string().uuid(), analysis: z.string().uuid(), format: z.enum(["csv", "json", "html"]),
+  status: z.enum(["pending", "ready", "failed", "expired"]), expires_at: z.string(),
+  error_message: z.string(), created_at: z.string(),
+})
+const workspaceSchema = z.object({
+  saved_analyses: z.array(savedAnalysisSchema),
+  recent_analyses: z.array(savedAnalysisSchema),
+  favorites: z.array(favoriteSchema),
+  watchlist_items: z.array(watchlistSchema),
+  saved_comparisons: z.array(comparisonSchema),
+  recent_exports: z.array(exportSchema),
+})
+
+export const workspaceApi = {
+  get: () => apiRequest("/workspace", workspaceSchema),
+  addFavorite: (payload: { kind: "country" | "product"; code: string; label: string }) =>
+    apiRequest("/favorites", favoriteSchema, { method: "POST", body: JSON.stringify(payload) }),
+  addWatchlist: (payload: { name: string; importer: string; exporter?: string; product: string; start_year: number; end_year: number }) =>
+    apiRequest("/watchlists", watchlistSchema, { method: "POST", body: JSON.stringify({ ...payload, exporter: payload.exporter ?? "" }) }),
+  saveComparison: (payload: { name: string; countries: string[]; suppliers: string[]; product: string; start_year: number; end_year: number }) =>
+    apiRequest("/saved-comparisons", comparisonSchema, { method: "POST", body: JSON.stringify(payload) }),
+  createExport: (analysis: string, format: "csv" | "json" | "html") =>
+    apiRequest("/exports", exportSchema, { method: "POST", body: JSON.stringify({ analysis, format }) }),
+  exportDownloadUrl: (id: string) => `${apiBaseUrl}/exports/${encodeURIComponent(id)}/download`,
 }
 
 export function getHealth(): Promise<HealthResponse> {
