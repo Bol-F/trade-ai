@@ -69,7 +69,17 @@ mypy_path = "apps/backend,packages/data_pipeline/src,packages/ml/src"
 exclude = ["apps/frontend"]
 
 [[tool.mypy.overrides]]
-module = ["celery.*", "redis.*", "pyarrow", "pyarrow.*", "joblib", "sklearn", "sklearn.*"]
+module = [
+  "celery.*",
+  "redis.*",
+  "pyarrow",
+  "pyarrow.*",
+  "joblib",
+  "sklearn",
+  "sklearn.*",
+  "scipy",
+  "scipy.*",
+]
 ignore_missing_imports = true
 disable_error_code = ["import-untyped"]
 

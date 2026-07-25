@@ -412,9 +412,8 @@ def forecast(payload: dict[str, Any]) -> dict[str, Any]:
                     ),
                 }
             )
-    rmse = float(
-        metrics.get("test_candidate", metrics.get("candidate", {})).get("global", {}).get("rmse", 0)
-    )
+    candidate_metrics = metrics.get("test_candidate") or metrics.get("candidate") or {}
+    rmse = float(candidate_metrics.get("global", {}).get("rmse", 0))
     residual_margin = max(rmse * 1.96, prediction * (0.35 if used_fallback else 0.1))
     return {
         "request_id": str(uuid.uuid4()),

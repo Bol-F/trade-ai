@@ -1,6 +1,6 @@
 from collections.abc import Callable
 from datetime import timedelta
-from typing import Any
+from typing import Any, cast
 
 from django.core.cache import cache
 from django.db.models import QuerySet
@@ -105,7 +105,7 @@ class OwnerScopedViewSet(viewsets.ModelViewSet[Any]):
     model: type[Any]
 
     def get_queryset(self) -> QuerySet[Any]:
-        return self.model.objects.filter(owner_id=self.request.user.pk)
+        return cast(QuerySet[Any], self.model.objects.filter(owner_id=self.request.user.pk))
 
     def perform_create(self, serializer: BaseSerializer[Any]) -> None:
         serializer.save(owner=self.request.user)
@@ -179,26 +179,27 @@ class WorkspaceView(APIView):
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self, request: Request) -> Response:
-        owner = request.user
+        owner_id = request.user.pk
         return Response(
             {
                 "saved_analyses": SavedAnalysisSerializer(
-                    SavedAnalysis.objects.filter(owner=owner)[:10], many=True
+                    SavedAnalysis.objects.filter(owner_id=owner_id)[:10], many=True
                 ).data,
                 "recent_analyses": SavedAnalysisSerializer(
-                    SavedAnalysis.objects.filter(owner=owner).order_by("-updated_at")[:5], many=True
+                    SavedAnalysis.objects.filter(owner_id=owner_id).order_by("-updated_at")[:5],
+                    many=True,
                 ).data,
                 "favorites": FavoriteSerializer(
-                    Favorite.objects.filter(owner=owner), many=True
+                    Favorite.objects.filter(owner_id=owner_id), many=True
                 ).data,
                 "watchlist_items": WatchlistItemSerializer(
-                    WatchlistItem.objects.filter(owner=owner), many=True
+                    WatchlistItem.objects.filter(owner_id=owner_id), many=True
                 ).data,
                 "saved_comparisons": SavedComparisonSerializer(
-                    SavedComparison.objects.filter(owner=owner), many=True
+                    SavedComparison.objects.filter(owner_id=owner_id), many=True
                 ).data,
                 "recent_exports": AnalysisExportSerializer(
-                    AnalysisExport.objects.filter(owner=owner)[:10], many=True
+                    AnalysisExport.objects.filter(owner_id=owner_id)[:10], many=True
                 ).data,
             }
         )
