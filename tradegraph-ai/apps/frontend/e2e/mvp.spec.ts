@@ -20,6 +20,12 @@ async function mockApi(page: Page, role: "user" | "admin" = "user") {
     const url = new URL(route.request().url())
     const path = url.pathname
     const fulfill = (json: unknown, status = 200) => route.fulfill({ status, contentType: "application/json", body: JSON.stringify(json) })
+    if (path.endsWith("/auth/csrf")) return route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      headers: { "set-cookie": "csrftoken=test-csrf-token; Path=/; SameSite=Lax" },
+      body: JSON.stringify({ csrf_token: "test-csrf-token" }),
+    })
     if (path.endsWith("/auth/me")) return authenticated ? fulfill(sessionUser) : fulfill({ error: { code: "UNAUTHORIZED", message: "Unauthorized", details: {} } }, 401)
     if (path.endsWith("/auth/refresh")) return fulfill({ error: { code: "UNAUTHORIZED", message: "Unauthorized", details: {} } }, 401)
     if (path.endsWith("/auth/register") || path.endsWith("/auth/login")) { authenticated = true; return fulfill(sessionUser) }
