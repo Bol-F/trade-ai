@@ -43,6 +43,7 @@ class RegisterView(APIView):
 
     @extend_schema(request=RegistrationSerializer, responses={201: UserSerializer})
     def post(self, request: Request) -> Response:
+        enforce_csrf(request)
         serializer = RegistrationSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
@@ -60,6 +61,7 @@ class LoginView(APIView):
 
     @extend_schema(request=LoginSerializer, responses={200: UserSerializer})
     def post(self, request: Request) -> Response:
+        enforce_csrf(request)
         serializer = LoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data["user"]
@@ -117,10 +119,19 @@ class LogoutView(APIView):
 
     @extend_schema(request=None, responses={204: None})
     def post(self, request: Request) -> Response:
+        enforce_csrf(request)
         _blacklist_cookie(request)
         response = Response(status=status.HTTP_204_NO_CONTENT)
         clear_auth_cookies(response)
         return response
+
+
+class CsrfTokenView(APIView):
+    permission_classes = [AllowAny]
+    authentication_classes: list[type] = []
+
+    def get(self, request: Request) -> Response:
+        return Response({"csrf_token": get_token(request._request)})
 
 
 class MeView(APIView):

@@ -6,6 +6,8 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 ACCESS_COOKIE = "access_token"
 REFRESH_COOKIE = "refresh_token"
+ACCESS_COOKIE_PATH = "/api/v1"
+REFRESH_COOKIE_PATH = "/api/v1/auth"
 
 
 def set_auth_cookies(response: Response, refresh: RefreshToken) -> None:
@@ -17,7 +19,7 @@ def set_auth_cookies(response: Response, refresh: RefreshToken) -> None:
         httponly=True,
         secure=settings.AUTH_COOKIE_SECURE,
         samesite=same_site,
-        path="/",
+        path=ACCESS_COOKIE_PATH,
     )
     response.set_cookie(
         REFRESH_COOKIE,
@@ -26,11 +28,11 @@ def set_auth_cookies(response: Response, refresh: RefreshToken) -> None:
         httponly=True,
         secure=settings.AUTH_COOKIE_SECURE,
         samesite=same_site,
-        path="/",
+        path=REFRESH_COOKIE_PATH,
     )
 
 
 def clear_auth_cookies(response: Response) -> None:
     same_site = cast(Literal["Lax", "Strict", "None"], settings.AUTH_COOKIE_SAMESITE)
-    response.delete_cookie(ACCESS_COOKIE, path="/", samesite=same_site)
-    response.delete_cookie(REFRESH_COOKIE, path="/", samesite=same_site)
+    response.delete_cookie(ACCESS_COOKIE, path=ACCESS_COOKIE_PATH, samesite=same_site)
+    response.delete_cookie(REFRESH_COOKIE, path=REFRESH_COOKIE_PATH, samesite=same_site)

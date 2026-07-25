@@ -8,7 +8,7 @@ version = "0.1.0"
 requires-python = ">=3.12,<3.13"
 dependencies = [
   "polars>=1.30,<2",
-  "pyarrow>=19,<23",
+  "pyarrow>=23.0.1,<24",
 ]
 
 [tool.hatch.build.targets.wheel]

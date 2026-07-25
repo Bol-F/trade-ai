@@ -12,6 +12,28 @@ from typing import Any
 from django.conf import settings
 from django.core.cache import cache
 
+ALLOWED_EXTERNAL_HOSTS = {"api.worldbank.org", "comtradeapi.un.org"}
+
+
+class SafeRedirectHandler(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):  # type: ignore[no-untyped-def]
+        parsed = urllib.parse.urlparse(newurl)
+        if parsed.scheme != "https" or parsed.hostname not in ALLOWED_EXTERNAL_HOSTS:
+            raise urllib.error.URLError("External API redirect target is not allowlisted.")
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+def _validate_external_url(url: str) -> None:
+    parsed = urllib.parse.urlparse(url)
+    if (
+        parsed.scheme != "https"
+        or parsed.hostname not in ALLOWED_EXTERNAL_HOSTS
+        or parsed.username
+        or parsed.password
+        or parsed.port not in {None, 443}
+    ):
+        raise ValueError("External API URL is not allowlisted.")
+
 
 @dataclass(frozen=True)
 class ExternalResponse:
@@ -20,13 +42,14 @@ class ExternalResponse:
 
 
 def _get_json(url: str, headers: dict[str, str] | None = None) -> Any:
+    _validate_external_url(url)
+    opener = urllib.request.build_opener(SafeRedirectHandler())
     attempts = 3
     for attempt in range(attempts):
         try:
-            request = urllib.request.Request(url, headers=headers or {})
-            with urllib.request.urlopen(
-                request, timeout=settings.EXTERNAL_API_TIMEOUT_SECONDS
-            ) as response:
+            request = urllib.request.Request(url, headers=headers or {})  # noqa: S310 -- URL is allowlisted above.
+            with opener.open(request, timeout=settings.EXTERNAL_API_TIMEOUT_SECONDS) as response:
+                _validate_external_url(response.geturl())
                 return json.load(response)
         except (urllib.error.URLError, TimeoutError):
             if attempt == attempts - 1:

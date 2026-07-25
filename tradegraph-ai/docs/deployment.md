@@ -8,7 +8,8 @@ data or development secrets.
 
 `DJANGO_SECRET_KEY`, `DJANGO_ALLOWED_HOSTS`, `DJANGO_CORS_ALLOWED_ORIGINS`,
 `AUTH_COOKIE_SECURE=true`, `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`,
-`POSTGRES_HOST`, `POSTGRES_PORT`, `REDIS_URL`, `NEXT_PUBLIC_API_URL`. Source-specific
+`POSTGRES_HOST`, `POSTGRES_PORT`, `REDIS_URL`, `NEXT_PUBLIC_API_URL`, and
+`METRICS_BEARER_TOKEN`. Source-specific
 credentials include `UN_COMTRADE_API_KEY`; never expose it to the frontend or logs.
 Configure `BACI_DOWNLOAD_URL`, external timeouts, object-store endpoint/bucket/access
 credentials, email-free operational alerting, and retention values where those features

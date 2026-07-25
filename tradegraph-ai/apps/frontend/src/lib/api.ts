@@ -142,10 +142,14 @@ function pageSchema<T>(item: z.ZodType<T>) {
 
 export const authApi = {
   me: () => apiRequest("/auth/me", userSchema),
-  login: (data: { email: string; password: string }) =>
-    apiRequest("/auth/login", userSchema, { method: "POST", body: JSON.stringify(data) }),
-  register: (data: { email: string; password: string; first_name: string; last_name: string }) =>
-    apiRequest("/auth/register", userSchema, { method: "POST", body: JSON.stringify(data) }),
+  login: async (data: { email: string; password: string }) => {
+    await apiRequest("/auth/csrf", z.object({ csrf_token: z.string() }))
+    return apiRequest("/auth/login", userSchema, { method: "POST", body: JSON.stringify(data) })
+  },
+  register: async (data: { email: string; password: string; first_name: string; last_name: string }) => {
+    await apiRequest("/auth/csrf", z.object({ csrf_token: z.string() }))
+    return apiRequest("/auth/register", userSchema, { method: "POST", body: JSON.stringify(data) })
+  },
   logout: () => apiRequest("/auth/logout", z.undefined(), { method: "POST" }),
 }
 

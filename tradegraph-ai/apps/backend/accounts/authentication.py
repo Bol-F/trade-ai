@@ -21,6 +21,7 @@ class CookieJWTAuthentication(JWTAuthentication):
     def authenticate(self, request: Request):  # type: ignore[no-untyped-def]
         header = self.get_header(request)
         raw_token = self.get_raw_token(header) if header is not None else None
+        cookie_authenticated = raw_token is None
         if raw_token is None:
             cookie_token = request.COOKIES.get("access_token")
             raw_token = cookie_token.encode() if cookie_token else None
@@ -28,6 +29,6 @@ class CookieJWTAuthentication(JWTAuthentication):
             return None
         validated_token = self.get_validated_token(raw_token)
         user = self.get_user(validated_token)
-        if request.method not in {"GET", "HEAD", "OPTIONS", "TRACE"}:
+        if cookie_authenticated and request.method not in {"GET", "HEAD", "OPTIONS", "TRACE"}:
             enforce_csrf(request)
         return user, validated_token
