@@ -63,7 +63,7 @@ def evaluate_synthetic_anomalies(features: np.ndarray) -> dict[str, Any]:
     threshold = float(np.quantile(scores[: len(normal)], 0.95))
     false_positive_rate = float(np.mean(scores[: len(normal)] > threshold))
     per_scenario = {}
-    injected_scores = scores[len(normal):]
+    injected_scores = scores[len(normal) :]
     for label in scenarios:
         selected = injected_scores[np.array(labels) == label]
         per_scenario[label] = float(np.mean(selected > threshold))

@@ -138,9 +138,7 @@ def test_filter_orientation_and_empty_coverage(api_client: APIClient) -> None:
     )
     assert both.status_code == 200
     assert len(both.data["data"]) == 1
-    outside = api_client.get(
-        reverse("trade-timeseries"), {"start_year": 2025, "end_year": 2025}
-    )
+    outside = api_client.get(reverse("trade-timeseries"), {"start_year": 2025, "end_year": 2025})
     assert outside.status_code == 200
     assert outside.data["data"] == []
 

@@ -186,9 +186,12 @@ def test_competing_model_activations_leave_exactly_one_active(tmp_path: Path) ->
     second = model_record(dataset, "candidate-2", ModelVersion.Status.CANDIDATE, second_path)
     activate_model(first)
     activate_model(second)
-    assert ModelVersion.objects.filter(
-        task_type="trade_forecast", status=ModelVersion.Status.ACTIVE
-    ).count() == 1
+    assert (
+        ModelVersion.objects.filter(
+            task_type="trade_forecast", status=ModelVersion.Status.ACTIVE
+        ).count()
+        == 1
+    )
     first.refresh_from_db()
     second.refresh_from_db()
     assert first.status == ModelVersion.Status.ARCHIVED

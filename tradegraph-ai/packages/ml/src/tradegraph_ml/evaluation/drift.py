@@ -16,7 +16,9 @@ def population_stability_index(reference: np.ndarray, current: np.ndarray, bins:
     return float(np.sum((actual - expected) * np.log(actual / expected)))
 
 
-def drift_report(reference: dict[str, np.ndarray], current: dict[str, np.ndarray]) -> dict[str, Any]:
+def drift_report(
+    reference: dict[str, np.ndarray], current: dict[str, np.ndarray]
+) -> dict[str, Any]:
     metrics: dict[str, Any] = {}
     for name in sorted(reference.keys() & current.keys()):
         ref, cur = np.asarray(reference[name]), np.asarray(current[name])
@@ -25,5 +27,14 @@ def drift_report(reference: dict[str, np.ndarray], current: dict[str, np.ndarray
             continue
         statistic, p_value = ks_2samp(ref.astype(float), cur.astype(float))
         psi = population_stability_index(ref, cur)
-        metrics[name] = {"ks_statistic": float(statistic), "ks_p_value": float(p_value), "psi": psi, "drift_detected": bool((p_value < 0.01 and statistic >= 0.1) or psi >= 0.2)}
-    return {"requires_review": any(item.get("drift_detected", False) for item in metrics.values()), "metrics": metrics, "automatic_retraining": False}
+        metrics[name] = {
+            "ks_statistic": float(statistic),
+            "ks_p_value": float(p_value),
+            "psi": psi,
+            "drift_detected": bool((p_value < 0.01 and statistic >= 0.1) or psi >= 0.2),
+        }
+    return {
+        "requires_review": any(item.get("drift_detected", False) for item in metrics.values()),
+        "metrics": metrics,
+        "automatic_retraining": False,
+    }

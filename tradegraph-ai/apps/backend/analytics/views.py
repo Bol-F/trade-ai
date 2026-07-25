@@ -1,9 +1,8 @@
 from collections.abc import Callable
-from typing import Any
+from datetime import timedelta
+from typing import Any, cast
 
 from django.core.cache import cache
-from datetime import timedelta
-
 from django.db.models import QuerySet
 from django.http import HttpResponse
 from django.utils import timezone
@@ -106,7 +105,7 @@ class OwnerScopedViewSet(viewsets.ModelViewSet[Any]):
     model: type[Any]
 
     def get_queryset(self) -> QuerySet[Any]:
-        return self.model.objects.filter(owner_id=self.request.user.pk)
+        return cast(QuerySet[Any], self.model.objects.filter(owner_id=self.request.user.pk))
 
     def perform_create(self, serializer: BaseSerializer[Any]) -> None:
         serializer.save(owner=self.request.user)
@@ -141,6 +140,7 @@ class AnalysisExportViewSet(OwnerScopedViewSet):
         analysis = serializer.validated_data["analysis"]
         if analysis.owner_id != self.request.user.pk:
             from rest_framework.exceptions import PermissionDenied
+
             raise PermissionDenied("You can only export your own analyses.")
         format_name = serializer.validated_data["format"]
         export = serializer.save(
@@ -165,8 +165,12 @@ class AnalysisExportViewSet(OwnerScopedViewSet):
         if export.status != AnalysisExport.Status.READY:
             return HttpResponse("Export is not ready.", status=409)
         content_types = {"csv": "text/csv", "json": "application/json", "html": "text/html"}
-        response = HttpResponse(export.content, content_type=f"{content_types[export.format]}; charset=utf-8")
-        response["Content-Disposition"] = f'attachment; filename="tradegraph-analysis.{export.format}"'
+        response = HttpResponse(
+            export.content, content_type=f"{content_types[export.format]}; charset=utf-8"
+        )
+        response["Content-Disposition"] = (
+            f'attachment; filename="tradegraph-analysis.{export.format}"'
+        )
         response["Cache-Control"] = "private, no-store"
         return response
 
@@ -175,12 +179,27 @@ class WorkspaceView(APIView):
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self, request: Request) -> Response:
-        owner = request.user
-        return Response({
-            "saved_analyses": SavedAnalysisSerializer(SavedAnalysis.objects.filter(owner=owner)[:10], many=True).data,
-            "recent_analyses": SavedAnalysisSerializer(SavedAnalysis.objects.filter(owner=owner).order_by("-updated_at")[:5], many=True).data,
-            "favorites": FavoriteSerializer(Favorite.objects.filter(owner=owner), many=True).data,
-            "watchlist_items": WatchlistItemSerializer(WatchlistItem.objects.filter(owner=owner), many=True).data,
-            "saved_comparisons": SavedComparisonSerializer(SavedComparison.objects.filter(owner=owner), many=True).data,
-            "recent_exports": AnalysisExportSerializer(AnalysisExport.objects.filter(owner=owner)[:10], many=True).data,
-        })
+        owner_id = request.user.pk
+        return Response(
+            {
+                "saved_analyses": SavedAnalysisSerializer(
+                    SavedAnalysis.objects.filter(owner_id=owner_id)[:10], many=True
+                ).data,
+                "recent_analyses": SavedAnalysisSerializer(
+                    SavedAnalysis.objects.filter(owner_id=owner_id).order_by("-updated_at")[:5],
+                    many=True,
+                ).data,
+                "favorites": FavoriteSerializer(
+                    Favorite.objects.filter(owner_id=owner_id), many=True
+                ).data,
+                "watchlist_items": WatchlistItemSerializer(
+                    WatchlistItem.objects.filter(owner_id=owner_id), many=True
+                ).data,
+                "saved_comparisons": SavedComparisonSerializer(
+                    SavedComparison.objects.filter(owner_id=owner_id), many=True
+                ).data,
+                "recent_exports": AnalysisExportSerializer(
+                    AnalysisExport.objects.filter(owner_id=owner_id)[:10], many=True
+                ).data,
+            }
+        )

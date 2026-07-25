@@ -157,9 +157,7 @@ def test_supplier_and_country_profile_query_counts_are_bounded(api_client: APICl
 
 def test_expensive_date_ranges_are_rejected(api_client: APIClient) -> None:
     import_sample_dataset()
-    response = api_client.get(
-        reverse("trade-timeseries"), {"start_year": 1900, "end_year": 2024}
-    )
+    response = api_client.get(reverse("trade-timeseries"), {"start_year": 1900, "end_year": 2024})
     assert response.status_code == 400
     assert b"50 years" in response.content
 

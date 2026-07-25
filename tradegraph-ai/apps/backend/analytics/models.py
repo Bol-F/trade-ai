@@ -56,6 +56,9 @@ class Favorite(OwnedWorkspaceItem):
         ]
         ordering = ("kind", "label")
 
+    def __str__(self) -> str:
+        return f"{self.get_kind_display()}: {self.label}"
+
 
 class WatchlistItem(OwnedWorkspaceItem):
     name = models.CharField(max_length=160)
@@ -70,6 +73,9 @@ class WatchlistItem(OwnedWorkspaceItem):
         ordering = ("-updated_at",)
         indexes = [models.Index(fields=("owner", "-updated_at"), name="watch_owner_updated_idx")]
 
+    def __str__(self) -> str:
+        return self.name
+
 
 class SavedComparison(OwnedWorkspaceItem):
     name = models.CharField(max_length=160)
@@ -82,12 +88,16 @@ class SavedComparison(OwnedWorkspaceItem):
     class Meta:
         ordering = ("-updated_at",)
 
+    def __str__(self) -> str:
+        return self.name
+
 
 class AnalysisExport(OwnedWorkspaceItem):
     class Format(models.TextChoices):
         CSV = "csv", "CSV"
         JSON = "json", "JSON"
         HTML = "html", "Print-friendly HTML"
+
     class Status(models.TextChoices):
         PENDING = "pending", "Pending"
         READY = "ready", "Ready"
@@ -103,3 +113,6 @@ class AnalysisExport(OwnedWorkspaceItem):
 
     class Meta:
         ordering = ("-created_at",)
+
+    def __str__(self) -> str:
+        return f"{self.analysis}: {self.get_format_display()} ({self.get_status_display()})"

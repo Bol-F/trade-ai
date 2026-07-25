@@ -1,3 +1,5 @@
+from typing import cast
+
 from rest_framework import serializers
 
 from analytics.models import AnalysisExport, Favorite, SavedAnalysis, SavedComparison, WatchlistItem
@@ -77,7 +79,7 @@ class WatchlistItemSerializer(serializers.ModelSerializer[WatchlistItem]):
         read_only_fields = ("id", "created_at", "last_viewed_at")
 
     def validate(self, attrs: dict[str, object]) -> dict[str, object]:
-        if int(attrs["start_year"]) > int(attrs["end_year"]):
+        if cast(int, attrs["start_year"]) > cast(int, attrs["end_year"]):
             raise serializers.ValidationError("Start year must not be after end year.")
         attrs["importer"] = str(attrs["importer"]).upper()
         attrs["exporter"] = str(attrs.get("exporter", "")).upper()
@@ -109,7 +111,7 @@ class SavedComparisonSerializer(serializers.ModelSerializer[SavedComparison]):
             raise serializers.ValidationError(
                 {"suppliers": "Select two to four suppliers or none."}
             )
-        if int(attrs["start_year"]) > int(attrs["end_year"]):
+        if cast(int, attrs["start_year"]) > cast(int, attrs["end_year"]):
             raise serializers.ValidationError("Start year must not be after end year.")
         for field, values in (("countries", countries), ("suppliers", suppliers)):
             if any(

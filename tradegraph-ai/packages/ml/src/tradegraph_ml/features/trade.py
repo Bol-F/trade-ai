@@ -48,8 +48,9 @@ def build_forecast_features(
             )
             .fill_nan(None)
             .alias("growth_lag_1"),
-            pl.mean_horizontal("trade_value_lag_1", "trade_value_lag_2", "trade_value_lag_3")
-            .alias("rolling_mean_3"),
+            pl.mean_horizontal("trade_value_lag_1", "trade_value_lag_2", "trade_value_lag_3").alias(
+                "rolling_mean_3"
+            ),
             pl.concat_list("trade_value_lag_1", "trade_value_lag_2", "trade_value_lag_3")
             .list.std()
             .alias("rolling_std_3"),

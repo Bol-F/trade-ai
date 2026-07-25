@@ -113,9 +113,7 @@ def exposure_components(
     return ExposureComponents(
         supplier_concentration=min(max(concentration, 0), 1) * 100,
         trade_value_volatility=(
-            min(coefficient_of_variation(yearly_values), 1) * 100
-            if not insufficient_history
-            else 0
+            min(coefficient_of_variation(yearly_values), 1) * 100 if not insufficient_history else 0
         ),
         negative_recent_trend=(
             min(max(-(recent_growth or 0), 0), 1) * 100 if not insufficient_history else 0

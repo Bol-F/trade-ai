@@ -13,7 +13,9 @@ WEIGHTS = {
 
 
 def rank_suppliers(
-    candidates: list[dict[str, Any]], importer: str, minimum_observations: int = 3,
+    candidates: list[dict[str, Any]],
+    importer: str,
+    minimum_observations: int = 3,
     weights: dict[str, float] | None = None,
 ) -> list[dict[str, Any]]:
     weights = weights or WEIGHTS
@@ -41,12 +43,16 @@ def rank_suppliers(
             "export_stability": min(max(1 - float(item.get("volatility", 1)), 0), 1),
             "estimated_unit_value": (
                 max(0, 1 - float(item["unit_value"]) / unit_max)
-                if item.get("unit_value") is not None else 0.5
+                if item.get("unit_value") is not None
+                else 0.5
             ),
             "existing_trade_relationship": 1.0 if item.get("existing_relationship") else 0.0,
             "supplier_diversification": min(max(1 - float(item.get("hhi", 1)), 0), 1),
         }
-        score = min(100.0, max(0.0, sum(components[name] * weight for name, weight in weights.items()) * 100))
+        score = min(
+            100.0,
+            max(0.0, sum(components[name] * weight for name, weight in weights.items()) * 100),
+        )
         reasons = [
             name.replace("_", " ")
             for name, value in sorted(components.items(), key=lambda pair: pair[1], reverse=True)
@@ -76,12 +82,15 @@ def ranking_sensitivity(
         adjusted[component] *= 1 + variation
         total = sum(adjusted.values())
         adjusted = {name: value / total for name, value in adjusted.items()}
-        scenarios[component] = [item["country"] for item in rank_suppliers(candidates, importer, weights=adjusted)]
+        scenarios[component] = [
+            item["country"] for item in rank_suppliers(candidates, importer, weights=adjusted)
+        ]
     return {
         "baseline_order": baseline_order,
         "scenarios": scenarios,
         "top_candidate_stability": (
             sum(order[:1] == baseline_order[:1] for order in scenarios.values()) / len(scenarios)
-            if baseline_order else 1.0
+            if baseline_order
+            else 1.0
         ),
     }

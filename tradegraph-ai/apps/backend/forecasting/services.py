@@ -88,9 +88,7 @@ def build_feature_frame(dataset: DatasetVersion | None = None) -> pl.DataFrame:
         for year in sorted(years):
             current = global_totals[(hs2, year)]
             global_growth[(hs2, year)] = (
-                (current - previous) / previous
-                if previous is not None and previous != 0
-                else 0
+                (current - previous) / previous if previous is not None and previous != 0 else 0
             )
             previous = current
     normalized = []
@@ -182,7 +180,9 @@ def train_forecast_models(dataset: DatasetVersion | None = None) -> ModelVersion
         "candidate": report,
         "baseline": baseline_report,
         "previous_year_baseline": previous_year_report,
-        "candidate_comparison": {candidate_name: candidate_report for candidate_name, _, candidate_report in evaluated},
+        "candidate_comparison": {
+            candidate_name: candidate_report for candidate_name, _, candidate_report in evaluated
+        },
         "test_candidate": grouped_evaluation(test, test_actual_usd, test_predictions),
         "test_baseline": grouped_evaluation(test, test_actual_usd, test_baseline),
         "activation_checks": {
@@ -221,8 +221,8 @@ def train_forecast_models(dataset: DatasetVersion | None = None) -> ModelVersion
 
 @transaction.atomic
 def activate_model(model: ModelVersion, *, administratively_approved: bool = True) -> None:
-    locked = ModelVersion.objects.select_for_update().select_related("dataset_version").get(
-        pk=model.pk
+    locked = (
+        ModelVersion.objects.select_for_update().select_related("dataset_version").get(pk=model.pk)
     )
     if locked.status != ModelVersion.Status.CANDIDATE:
         raise ValueError("Only a candidate model can be activated.")
@@ -247,7 +247,10 @@ def activate_model(model: ModelVersion, *, administratively_approved: bool = Tru
         administratively_approved,
     )
     if not all(required_checks):
-        raise ValueError("Segment, compatibility, reproducibility, and administrative approval checks are required.")
+        raise ValueError(
+            "Segment, compatibility, reproducibility, and administrative approval "
+            "checks are required."
+        )
     checks["administratively_approved"] = True
     locked.metrics["activation_checks"] = checks
     artifact_path = Path(locked.artifact_path)
@@ -264,6 +267,7 @@ def activate_model(model: ModelVersion, *, administratively_approved: bool = Tru
     locked.activated_at = timezone.now()
     locked.save(update_fields=["status", "activated_at", "metrics"])
     from audit.models import AuditEvent
+
     AuditEvent.objects.create(
         action="model.activated",
         endpoint="forecasting.services.activate_model",
@@ -283,12 +287,17 @@ def activate_model(model: ModelVersion, *, administratively_approved: bool = Tru
 
 @transaction.atomic
 def rollback_model(task_type: str = "trade_forecast") -> ModelVersion:
-    active = ModelVersion.objects.select_for_update().filter(
-        task_type=task_type, status=ModelVersion.Status.ACTIVE
-    ).first()
-    previous = ModelVersion.objects.select_for_update().filter(
-        task_type=task_type, status=ModelVersion.Status.ARCHIVED
-    ).order_by("-activated_at", "-created_at").first()
+    active = (
+        ModelVersion.objects.select_for_update()
+        .filter(task_type=task_type, status=ModelVersion.Status.ACTIVE)
+        .first()
+    )
+    previous = (
+        ModelVersion.objects.select_for_update()
+        .filter(task_type=task_type, status=ModelVersion.Status.ARCHIVED)
+        .order_by("-activated_at", "-created_at")
+        .first()
+    )
     if active is None or previous is None:
         raise ValueError("An active and a previous archived model are required for rollback.")
     active.status = ModelVersion.Status.ARCHIVED
@@ -297,9 +306,13 @@ def rollback_model(task_type: str = "trade_forecast") -> ModelVersion:
     previous.activated_at = timezone.now()
     previous.save(update_fields=["status", "activated_at"])
     from audit.models import AuditEvent
+
     AuditEvent.objects.create(
-        action="model.rolled_back", endpoint="forecasting.services.rollback_model",
-        method="ADMIN", status_code=200, request_id=uuid.uuid4(),
+        action="model.rolled_back",
+        endpoint="forecasting.services.rollback_model",
+        method="ADMIN",
+        status_code=200,
+        request_id=uuid.uuid4(),
         metadata={"from_model": active.model_version, "to_model": previous.model_version},
     )
     return previous
@@ -331,14 +344,35 @@ def forecast(payload: dict[str, Any]) -> dict[str, Any]:
     model_name, model_version, metrics = "three_year_moving_average", "baseline-v1", {}
     training_period: dict[str, Any] = {}
     factors = ["trade_value_lag_1", "rolling_mean_3", "global_product_growth"]
-    explanations = ["A baseline was used because a compatible, quality-approved model was unavailable."]
+    explanations = [
+        "A baseline was used because a compatible, quality-approved model was unavailable."
+    ]
     if len(values) < 4:
-        warnings.append({"code": "INSUFFICIENT_HISTORY", "message": "Fewer than four annual observations are available; the baseline is used."})
+        warnings.append(
+            {
+                "code": "INSUFFICIENT_HISTORY",
+                "message": (
+                    "Fewer than four annual observations are available; the baseline is used."
+                ),
+            }
+        )
     if dataset.period_end < timezone.now().year - 2:
-        warnings.append({"code": "STALE_DATA", "message": "The latest source data is more than two years old."})
-    recent_change = abs(values[-1] / values[-2] - 1) if len(values) >= 2 and values[-2] else math.inf
+        warnings.append(
+            {"code": "STALE_DATA", "message": "The latest source data is more than two years old."}
+        )
+    recent_change = (
+        abs(values[-1] / values[-2] - 1) if len(values) >= 2 and values[-2] else math.inf
+    )
     if recent_change > 1:
-        warnings.append({"code": "STRUCTURAL_BREAK", "message": "The latest annual change is unusually large and may reflect a structural break."})
+        warnings.append(
+            {
+                "code": "STRUCTURAL_BREAK",
+                "message": (
+                    "The latest annual change is unusually large and may reflect a "
+                    "structural break."
+                ),
+            }
+        )
     if (
         active is not None
         and active.dataset_version_id == dataset.pk
@@ -350,7 +384,9 @@ def forecast(payload: dict[str, Any]) -> dict[str, Any]:
             & (pl.col("exporter") == payload["exporter"])
             & (pl.col("hs2") == payload["hs2"])
         ).tail(1)
-        poor_quality = len(values) < 4 or recent_change > 2 or dataset.period_end < timezone.now().year - 2
+        poor_quality = (
+            len(values) < 4 or recent_change > 2 or dataset.period_end < timezone.now().year - 2
+        )
         if not row.is_empty() and not poor_quality:
             artifact_path = Path(active.artifact_path)
             if (
@@ -367,10 +403,17 @@ def forecast(payload: dict[str, Any]) -> dict[str, Any]:
             explanations = explain_forecast(row_values)
             used_fallback = False
         elif poor_quality:
-            warnings.append({"code": "BASELINE_FALLBACK", "message": "Input quality is outside supported conditions, so the production model was not used."})
-    rmse = float(
-        metrics.get("test_candidate", metrics.get("candidate", {})).get("global", {}).get("rmse", 0)
-    )
+            warnings.append(
+                {
+                    "code": "BASELINE_FALLBACK",
+                    "message": (
+                        "Input quality is outside supported conditions, so the production "
+                        "model was not used."
+                    ),
+                }
+            )
+    candidate_metrics = metrics.get("test_candidate") or metrics.get("candidate") or {}
+    rmse = float(candidate_metrics.get("global", {}).get("rmse", 0))
     residual_margin = max(rmse * 1.96, prediction * (0.35 if used_fallback else 0.1))
     return {
         "request_id": str(uuid.uuid4()),
