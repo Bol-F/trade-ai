@@ -2,7 +2,12 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { beforeEach, describe, expect, it } from "vitest"
 
 import { LanguageSwitcher } from "@/components/language-switcher"
-import { I18nProvider } from "@/lib/i18n"
+import { I18nProvider, useI18n } from "@/lib/i18n"
+
+function TranslatedHeading() {
+  const { t } = useI18n()
+  return <h1>{t("overview.title")}</h1>
+}
 
 describe("LanguageSwitcher", () => {
   beforeEach(() => {
@@ -14,6 +19,7 @@ describe("LanguageSwitcher", () => {
     render(
       <I18nProvider>
         <LanguageSwitcher />
+        <TranslatedHeading />
       </I18nProvider>,
     )
 
@@ -24,5 +30,10 @@ describe("LanguageSwitcher", () => {
       expect(window.localStorage.getItem("tradegraph-locale")).toBe("ru")
     })
     expect(screen.getByRole("button", { name: /язык: русский/i })).toBeInTheDocument()
+    expect(
+      screen.getByRole("heading", {
+        name: "Узнайте, кто, чем и с кем торгует и как это меняется.",
+      }),
+    ).toBeInTheDocument()
   })
 })
