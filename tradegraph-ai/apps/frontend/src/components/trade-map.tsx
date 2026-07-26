@@ -5,6 +5,9 @@ import type { FeatureCollection, LineString } from "geojson"
 import type { GeoJSONSource, Map as MapLibreMap } from "maplibre-gl"
 import type { MapFlow } from "@/lib/api"
 
+export const tradeMapStyleUrl =
+  process.env.NEXT_PUBLIC_MAP_STYLE_URL ?? "https://demotiles.maplibre.org/style.json"
+
 export function arcCoordinates(start: [number, number], end: [number, number]): [number, number][] {
   const dx = end[0] - start[0]
   const dy = end[1] - start[1]
@@ -34,7 +37,7 @@ export function TradeMap({ flows }: { flows: MapFlow[] }) {
       if (disposed || !containerRef.current) return
       const map = new maplibregl.Map({
         container: containerRef.current,
-        style: "https://demotiles.maplibre.org/style.json",
+        style: tradeMapStyleUrl,
         center: [45, 30],
         zoom: 1.3,
       })
