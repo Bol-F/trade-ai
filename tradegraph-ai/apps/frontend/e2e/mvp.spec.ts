@@ -66,7 +66,7 @@ test("register, explore, view profile, forecast, save and logout", async ({ page
   await page.goto("/explorer")
   await page.getByLabel("Importer").selectOption("UZB")
   await page.getByRole("button", { name: "Apply" }).click()
-  await expect(page.getByRole("img", { name: "Annual trade value for the selected filters" })).toBeVisible()
+  await expect(page.getByRole("img", { name: "Annual trade value" })).toBeVisible()
   await page.getByRole("button", { name: "Save analysis" }).click()
   await expect(page.getByRole("button", { name: "Analysis saved" })).toBeVisible()
 
@@ -86,6 +86,29 @@ test("login flow", async ({ page }) => {
   await page.getByLabel("Password").fill("StrongPass123!")
   await page.getByRole("button", { name: "Log in" }).click()
   await expect(page).toHaveURL(/countries/)
+})
+
+test("Russian locale switches and persists across navigation", async ({ page }) => {
+  await mockApi(page)
+  await page.goto("/")
+
+  await page.getByRole("button", { name: "Language: English" }).click()
+
+  await expect(page.locator("html")).toHaveAttribute("lang", "ru")
+  await expect(
+    page.getByRole("heading", {
+      name: "Узнайте, кто, чем и с кем торгует и как это меняется.",
+    }),
+  ).toBeVisible()
+
+  await page.reload()
+
+  await expect(page.locator("html")).toHaveAttribute("lang", "ru")
+  await expect(page.getByRole("button", { name: "Язык: Русский" })).toBeVisible()
+
+  await page.goto("/forecast")
+  await expect(page.getByRole("heading", { name: "Прогноз торговли" })).toBeVisible()
+  await expect(page.getByRole("button", { name: "Рассчитать прогноз" })).toBeVisible()
 })
 
 test("responsive, dark mode, URL filters, and reference screenshots", async ({ page }) => {
