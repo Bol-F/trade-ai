@@ -4,6 +4,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Menu, Network } from "lucide-react"
 import { useAuth } from "@/components/auth-provider"
+import { LanguageSwitcher } from "@/components/language-switcher"
 import { PageContainer } from "@/components/page-container"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Button } from "@/components/ui/button"
@@ -46,6 +47,7 @@ export function SiteHeader() {
       <Link href="/" className="flex shrink-0 items-center gap-2 font-semibold"><span className="grid size-8 place-items-center rounded-lg bg-primary text-primary-foreground"><Network className="size-4" /></span><span className="hidden sm:inline">TradeGraph AI</span></Link>
       <nav aria-label="Primary navigation" className="ml-4 hidden min-w-0 flex-1 items-center gap-0.5 overflow-x-auto xl:flex">{navigation}</nav>
       <div className="ml-auto flex items-center gap-1">
+        <LanguageSwitcher />
         <ThemeToggle />
         {!isLoading && (user ? <><span className="hidden max-w-40 truncate text-sm text-muted-foreground lg:inline">{user.first_name || user.email}</span><Button variant="ghost" onClick={logout}>Log out</Button></> : <><Button variant="ghost" asChild className="hidden sm:inline-flex"><Link href="/login">Log in</Link></Button><Button asChild className="hidden sm:inline-flex"><Link href="/register">Get started</Link></Button></>)}
         <Sheet><SheetTrigger asChild><Button variant="outline" size="icon" className="xl:hidden" aria-label="Open navigation"><Menu /></Button></SheetTrigger>
