@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { mlApi, type SupplierRecommendation } from "@/lib/api"
+import { useI18n } from "@/lib/i18n"
 
 const componentLabels: Record<string, string> = {
   export_capacity: "Export capacity", export_growth: "Growth", export_stability: "Stability",
@@ -19,6 +20,7 @@ const componentLabels: Record<string, string> = {
 }
 
 export function SupplierFinder() {
+  const { t } = useI18n()
   const [importer, setImporter] = useState("USA")
   const [hs2, setHs2] = useState("01")
   const [year, setYear] = useState("2024")
@@ -30,16 +32,16 @@ export function SupplierFinder() {
   }
   const comparison = result?.candidates.filter(candidate => selected.includes(candidate.country)) ?? []
   return <PageContainer className="py-10">
-    <PageHeader eyebrow="Explainable sourcing analysis" title="Supplier Finder" description="Rank potential exporters using transparent capacity, growth, stability, relationship, unit-value, and diversification components—not one unexplained score." breadcrumbs={[{ label: "Overview", href: "/" }, { label: "Supplier Finder" }]} metadata={result && <DataFreshnessBadge year={result.data_freshness} />} />
-    <FilterBar title="Sourcing question"><form onSubmit={event => { event.preventDefault(); setSelected([]); mutation.mutate({ importer, hs2, year: Number(year) }) }}><FilterSection className="sm:grid-cols-4 xl:grid-cols-4">
-      <Label>Importing country<Input className="mt-2" maxLength={3} value={importer} onChange={event => setImporter(event.target.value.toUpperCase())} /></Label>
-      <Label>HS2 product<Input className="mt-2" maxLength={2} value={hs2} onChange={event => setHs2(event.target.value.replace(/\D/g, ""))} /></Label>
-      <Label>Reference year<Input className="mt-2" value={year} onChange={event => setYear(event.target.value)} /></Label>
-      <Button className="self-end" disabled={mutation.isPending}>{mutation.isPending ? "Ranking…" : "Find suppliers"}</Button>
+    <PageHeader eyebrow={t("supplier.eyebrow")} title={t("supplier.title")} description={t("supplier.description")} breadcrumbs={[{ label: t("common.overview"), href: "/" }, { label: t("supplier.title") }]} metadata={result && <DataFreshnessBadge year={result.data_freshness} />} />
+    <FilterBar title={t("supplier.question")}><form onSubmit={event => { event.preventDefault(); setSelected([]); mutation.mutate({ importer, hs2, year: Number(year) }) }}><FilterSection className="sm:grid-cols-4 xl:grid-cols-4">
+      <Label>{t("supplier.importer")}<Input className="mt-2" maxLength={3} value={importer} onChange={event => setImporter(event.target.value.toUpperCase())} /></Label>
+      <Label>{t("supplier.product")}<Input className="mt-2" maxLength={2} value={hs2} onChange={event => setHs2(event.target.value.replace(/\D/g, ""))} /></Label>
+      <Label>{t("supplier.year")}<Input className="mt-2" value={year} onChange={event => setYear(event.target.value)} /></Label>
+      <Button className="self-end" disabled={mutation.isPending}>{mutation.isPending ? t("supplier.ranking") : t("supplier.find")}</Button>
     </FilterSection></form></FilterBar>
-    {mutation.isError && <div className="mt-6"><ErrorState description="Candidates could not be ranked. Verify the importer, product, and active data coverage." /></div>}
+    {mutation.isError && <div className="mt-6"><ErrorState description={t("supplier.error")} /></div>}
     {result && <><div className="mt-6 flex flex-wrap items-center justify-between gap-3"><p className="text-sm text-muted-foreground">{result.methodology}</p><Badge variant="outline">{selected.length}/4 selected for comparison</Badge></div>
-      {result.candidates.length === 0 ? <div className="mt-6"><EmptyState description="No exporters meet the positive-trade and minimum-history rules." /></div> :
+      {result.candidates.length === 0 ? <div className="mt-6"><EmptyState description={t("supplier.empty")} /></div> :
         <div className="mt-6 grid gap-4">{result.candidates.map((candidate, index) => <CandidateCard key={candidate.country} candidate={candidate} rank={index + 1} selected={selected.includes(candidate.country)} onToggle={() => toggle(candidate.country)} />)}</div>}
       {comparison.length >= 2 && <section className="mt-8 rounded-xl border bg-card p-5"><div className="flex items-center gap-2"><Scale className="size-5 text-primary" /><h2 className="font-semibold">Supplier comparison</h2></div><p className="mt-1 text-sm text-muted-foreground">Compare two to four selected candidates. Scores support investigation; they do not include logistics, sanctions, quality, or contract terms.</p><div className="mt-5 overflow-x-auto"><table className="w-full min-w-[720px] text-sm"><caption className="sr-only">Selected supplier component comparison</caption><thead><tr><th className="p-3 text-left">Supplier</th><th>Overall</th>{Object.values(componentLabels).map(label => <th key={label}>{label}</th>)}</tr></thead><tbody>{comparison.map(candidate => <tr className="border-t" key={candidate.country}><th className="p-3 text-left">{candidate.name} ({candidate.country})</th><td className="text-center font-mono">{candidate.recommendation_score.toFixed(1)}</td>{Object.keys(componentLabels).map(key => <td className="text-center font-mono" key={key}>{Math.round((candidate.component_scores[key] ?? 0) * 100)}</td>)}</tr>)}</tbody></table></div></section>}
     </>}
