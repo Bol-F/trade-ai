@@ -4,6 +4,7 @@ from pathlib import Path
 import pytest
 from accounts.models import User
 from datasets.clients import _validate_external_url
+from django.conf import settings
 from django.test import override_settings
 from django.urls import reverse
 from rest_framework.test import APIClient
@@ -32,6 +33,24 @@ def test_login_and_registration_require_csrf_bootstrap() -> None:
     assert client.post(reverse("auth-register"), payload, format="json").status_code == 403
     client, token = csrf_client()
     response = client.post(reverse("auth-register"), payload, format="json", HTTP_X_CSRFTOKEN=token)
+    assert response.status_code == 201
+
+
+def test_local_frontend_origin_is_trusted_for_registration() -> None:
+    assert "http://localhost:3000" in settings.CSRF_TRUSTED_ORIGINS
+    client, token = csrf_client()
+    response = client.post(
+        reverse("auth-register"),
+        {
+            "email": "local-origin@example.com",
+            "password": PASSWORD,
+            "first_name": "Local",
+            "last_name": "Origin",
+        },
+        format="json",
+        HTTP_ORIGIN="http://localhost:3000",
+        HTTP_X_CSRFTOKEN=token,
+    )
     assert response.status_code == 201
 
 
