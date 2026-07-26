@@ -193,10 +193,16 @@ export type TradeFilters = {
   end_year?: string
 }
 
+export function normalizeHsProduct(value: string): string {
+  const normalized = value.trim()
+  if (!/^\d{1,6}$/.test(normalized) || normalized.length % 2 === 0) return normalized
+  return normalized.padStart(normalized.length + 1, "0")
+}
+
 function filterQuery(filters: TradeFilters): string {
   const params = new URLSearchParams()
   Object.entries(filters).forEach(([key, value]) => {
-    if (value) params.set(key, value)
+    if (value) params.set(key, key === "product" ? normalizeHsProduct(value) : value)
   })
   return params.toString()
 }
