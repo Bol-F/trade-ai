@@ -15,12 +15,14 @@ import { Label } from "@/components/ui/label"
 import { Select } from "@/components/ui/select"
 import { toTimeseriesOption } from "@/lib/chart-transform"
 import { catalogApi, savedAnalysesApi, tradeApi, type TradeFilters } from "@/lib/api"
+import { useI18n } from "@/lib/i18n"
 import { queryKeys } from "@/lib/query-options"
 
 const money = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", notation: "compact", maximumFractionDigits: 1 })
 const number = new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 })
 
 export function ExplorerDashboard() {
+  const { t } = useI18n()
   const router = useRouter()
   const searchParams = useSearchParams()
   const { user } = useAuth()
@@ -53,37 +55,37 @@ export function ExplorerDashboard() {
   }
 
   return <PageContainer className="py-10 md:py-14">
-    <PageHeader eyebrow="Core analysis workspace" title="Trade Explorer" description="Filter directed trade flows, review annual change, and compare partner and product composition without losing your selection."
-      breadcrumbs={[{ label: "Overview", href: "/" }, { label: "Explorer" }]}
-      actions={user && <Button variant="outline" onClick={() => saveAnalysis.mutate()} disabled={saveAnalysis.isPending}>{saveAnalysis.isSuccess ? "Analysis saved" : saveAnalysis.isPending ? "Saving…" : "Save analysis"}</Button>}
+    <PageHeader eyebrow={t("explorer.eyebrow")} title={t("explorer.title")} description={t("explorer.description")}
+      breadcrumbs={[{ label: t("common.overview"), href: "/" }, { label: t("explorer.title") }]}
+      actions={user && <Button variant="outline" onClick={() => saveAnalysis.mutate()} disabled={saveAnalysis.isPending}>{saveAnalysis.isSuccess ? t("explorer.saved") : saveAnalysis.isPending ? t("explorer.saving") : t("explorer.save")}</Button>}
       metadata={<><DatasetVersionBadge version={overview.data?.meta.dataset_version} /><DataFreshnessBadge year={overview.data?.meta.source_period_end} /></>} />
     <FilterBar><form onSubmit={apply}><FilterSection>
-      <Filter label="Importer"><Select value={draft.importer ?? ""} onChange={event => setDraft(value => ({ ...value, importer: event.target.value }))}><option value="">All importers</option>{countries.data?.results.map(country => <option key={country.iso3} value={country.iso3}>{country.name}</option>)}</Select></Filter>
-      <Filter label="Exporter"><Select value={draft.exporter ?? ""} onChange={event => setDraft(value => ({ ...value, exporter: event.target.value }))}><option value="">All exporters</option>{countries.data?.results.map(country => <option key={country.iso3} value={country.iso3}>{country.name}</option>)}</Select></Filter>
-      <Filter label="HS product code"><Input value={draft.product ?? ""} onChange={event => setDraft(value => ({ ...value, product: event.target.value.replace(/\D/g, "").slice(0, 6) }))} placeholder="HS2, HS4 or HS6" inputMode="numeric" /></Filter>
-      <Filter label="Start year"><Input type="number" min="1900" max="2100" value={draft.start_year ?? ""} onChange={event => setDraft(value => ({ ...value, start_year: event.target.value }))} /></Filter>
-      <Filter label="End year"><Input type="number" min="1900" max="2100" value={draft.end_year ?? ""} onChange={event => setDraft(value => ({ ...value, end_year: event.target.value }))} /></Filter>
-    </FilterSection><div className="mt-4 flex flex-wrap items-center gap-2"><Button>Apply filters</Button><Button type="button" variant="ghost" onClick={reset}>Reset</Button>{Object.entries(filters).filter(([, value]) => value).map(([key, value]) => <Badge variant="secondary" key={key}>{key.replace("_", " ")}: {value}</Badge>)}</div></form></FilterBar>
-    <div aria-live="polite" className="mt-8">{failed ? <ErrorState description="Explorer data is unavailable. Confirm that the API is online and an active dataset has been imported." /> : loading ? <LoadingSkeleton rows={4} /> : <>
+      <Filter label={t("explorer.importer")}><Select value={draft.importer ?? ""} onChange={event => setDraft(value => ({ ...value, importer: event.target.value }))}><option value="">{t("explorer.allImporters")}</option>{countries.data?.results.map(country => <option key={country.iso3} value={country.iso3}>{country.name}</option>)}</Select></Filter>
+      <Filter label={t("explorer.exporter")}><Select value={draft.exporter ?? ""} onChange={event => setDraft(value => ({ ...value, exporter: event.target.value }))}><option value="">{t("explorer.allExporters")}</option>{countries.data?.results.map(country => <option key={country.iso3} value={country.iso3}>{country.name}</option>)}</Select></Filter>
+      <Filter label={t("explorer.product")}><Input value={draft.product ?? ""} onChange={event => setDraft(value => ({ ...value, product: event.target.value.replace(/\D/g, "").slice(0, 6) }))} placeholder="HS2, HS4 or HS6" inputMode="numeric" /></Filter>
+      <Filter label={t("explorer.startYear")}><Input type="number" min="1900" max="2100" value={draft.start_year ?? ""} onChange={event => setDraft(value => ({ ...value, start_year: event.target.value }))} /></Filter>
+      <Filter label={t("explorer.endYear")}><Input type="number" min="1900" max="2100" value={draft.end_year ?? ""} onChange={event => setDraft(value => ({ ...value, end_year: event.target.value }))} /></Filter>
+    </FilterSection><div className="mt-4 flex flex-wrap items-center gap-2"><Button>{t("common.apply")}</Button><Button type="button" variant="ghost" onClick={reset}>{t("common.reset")}</Button>{Object.entries(filters).filter(([, value]) => value).map(([key, value]) => <Badge variant="secondary" key={key}>{key.replace("_", " ")}: {value}</Badge>)}</div></form></FilterBar>
+    <div aria-live="polite" className="mt-8">{failed ? <ErrorState description={t("explorer.error")} /> : loading ? <LoadingSkeleton rows={4} /> : <>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <KpiCard icon={BarChart3} label="Trade value" value={money.format(overview.data?.data.total_trade_value_usd ?? 0)} />
-        <KpiCard icon={Boxes} label="Reported quantity" value={`${number.format(overview.data?.data.total_quantity_tons ?? 0)} t`} detail="Missing quantities remain excluded" />
-        <KpiCard icon={Globe2} label="Trade relationships" value={String(overview.data?.data.partner_count ?? 0)} />
-        <KpiCard icon={TrendingUp} label="Latest YoY change" value={overview.data?.data.yoy_change_percent == null ? "—" : `${overview.data.data.yoy_change_percent.toFixed(1)}%`} />
+        <KpiCard icon={BarChart3} label={t("explorer.tradeValue")} value={money.format(overview.data?.data.total_trade_value_usd ?? 0)} />
+        <KpiCard icon={Boxes} label={t("explorer.quantity")} value={`${number.format(overview.data?.data.total_quantity_tons ?? 0)} t`} detail={t("explorer.quantityDetail")} />
+        <KpiCard icon={Globe2} label={t("explorer.relationships")} value={String(overview.data?.data.partner_count ?? 0)} />
+        <KpiCard icon={TrendingUp} label={t("explorer.yoy")} value={overview.data?.data.yoy_change_percent == null ? "—" : `${overview.data.data.yoy_change_percent.toFixed(1)}%`} />
       </div>
-      <div className="mt-6"><ChartCard title="Annual trade value" description="USD, current filtered selection" summary={`${timeseries.data?.data.length ?? 0} annual observations are shown.`}>{timeseries.data?.data.length ? <EChart option={chartOption} ariaLabel="Annual trade value for the selected filters" /> : <EmptyState description="Adjust or clear filters to find reported trade flows." />}</ChartCard></div>
+      <div className="mt-6"><ChartCard title={t("explorer.annualTitle")} description={t("explorer.annualDescription")} summary={t("explorer.observations", { count: timeseries.data?.data.length ?? 0 })}>{timeseries.data?.data.length ? <EChart option={chartOption} ariaLabel={t("explorer.annualTitle")} /> : <EmptyState description={t("explorer.adjust")} />}</ChartCard></div>
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
-        <Ranking title="Top partners" caption="Highest-value partners for the selected direction and period" rows={(partners.data?.data ?? []).map(row => ({ id: row.iso3, label: `${row.name} (${row.iso3})`, value: money.format(row.trade_value_usd ?? 0) }))} />
-        <Ranking title="Top products" caption="Highest-value HS6 products for the selected flows" rows={(products.data?.data ?? []).map(row => ({ id: row.code, label: `${row.code} · ${row.name}`, value: money.format(row.trade_value_usd ?? 0) }))} />
+        <Ranking title={t("explorer.topPartners")} caption={t("explorer.topPartnersCaption")} nameLabel={t("explorer.name")} valueLabel={t("explorer.tradeValue")} rows={(partners.data?.data ?? []).map(row => ({ id: row.iso3, label: `${row.name} (${row.iso3})`, value: money.format(row.trade_value_usd ?? 0) }))} />
+        <Ranking title={t("explorer.topProducts")} caption={t("explorer.topProductsCaption")} nameLabel={t("explorer.name")} valueLabel={t("explorer.tradeValue")} rows={(products.data?.data ?? []).map(row => ({ id: row.code, label: `${row.code} · ${row.name}`, value: money.format(row.trade_value_usd ?? 0) }))} />
       </div>
-      <section className="mt-8 border-t pt-6"><h2 className="font-semibold">How to read this analysis</h2><p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">Values are aggregated from the active dataset after applying every visible filter. Missing quantities are not treated as zero. Year-over-year change is unavailable when the previous value is missing or zero.</p></section>
+      <section className="mt-8 border-t pt-6"><h2 className="font-semibold">{t("explorer.howToRead")}</h2><p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">{t("explorer.methodNote")}</p></section>
     </>}</div>
   </PageContainer>
 }
 
 function Filter({ label, children }: { label: string; children: React.ReactNode }) { return <Label className="block space-y-2"><span className="block">{label}</span>{children}</Label> }
-function Ranking({ title, caption, rows }: { title: string; caption: string; rows: { id: string; label: string; value: string }[] }) {
+function Ranking({ title, caption, nameLabel, valueLabel, rows }: { title: string; caption: string; nameLabel: string; valueLabel: string; rows: { id: string; label: string; value: string }[] }) {
   return <section className="overflow-hidden rounded-xl border bg-card"><div className="p-5"><h2 className="font-medium">{title}</h2><p className="mt-1 text-xs text-muted-foreground">{caption}</p></div>
-    {rows.length ? <div className="overflow-x-auto"><table className="w-full min-w-[420px] text-sm"><caption className="sr-only">{caption}</caption><thead className="bg-muted/60 text-left text-muted-foreground"><tr><th scope="col" className="px-5 py-3">Name</th><th scope="col" className="px-5 py-3 text-right">Trade value</th></tr></thead><tbody>{rows.map(row => <tr key={row.id} className="border-t"><th scope="row" className="px-5 py-4 text-left font-normal">{row.label}</th><td className="px-5 py-4 text-right font-mono">{row.value}</td></tr>)}</tbody></table></div> : <div className="p-4"><EmptyState description="No rows match the current filters." /></div>}
+    {rows.length ? <div className="overflow-x-auto"><table className="w-full min-w-[420px] text-sm"><caption className="sr-only">{caption}</caption><thead className="bg-muted/60 text-left text-muted-foreground"><tr><th scope="col" className="px-5 py-3">{nameLabel}</th><th scope="col" className="px-5 py-3 text-right">{valueLabel}</th></tr></thead><tbody>{rows.map(row => <tr key={row.id} className="border-t"><th scope="row" className="px-5 py-4 text-left font-normal">{row.label}</th><td className="px-5 py-4 text-right font-mono">{row.value}</td></tr>)}</tbody></table></div> : <div className="p-4"><EmptyState description="No rows match the current filters." /></div>}
   </section>
 }

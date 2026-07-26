@@ -12,8 +12,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { mlApi } from "@/lib/api"
+import { useI18n } from "@/lib/i18n"
 
 export function ForecastDashboard() {
+  const { t } = useI18n()
   const [importer, setImporter] = useState("CHN")
   const [exporter, setExporter] = useState("UZB")
   const [hs2, setHs2] = useState("01")
@@ -32,20 +34,20 @@ export function ForecastDashboard() {
   } : undefined
 
   return <PageContainer className="py-10">
-    <PageHeader eyebrow="Statistical decision support" title="Trade forecast" description="Compare historical observations, the retained moving-average baseline, and the active project-trained model. Forecasts are estimates, not guaranteed future values." breadcrumbs={[{ label: "Overview", href: "/" }, { label: "Forecast" }]} metadata={result && <><DatasetVersionBadge version={result.dataset_version} /><DataFreshnessBadge year={result.data_freshness} /></>} />
-    <FilterBar title="Forecast definition"><form onSubmit={event => { event.preventDefault(); mutation.mutate({ importer, exporter, hs2, year: Number(year) }) }}><FilterSection>
-      <Label>Importer ISO3<Input className="mt-2" maxLength={3} value={importer} onChange={event => setImporter(event.target.value.toUpperCase())} /></Label>
-      <Label>Exporter ISO3<Input className="mt-2" maxLength={3} value={exporter} onChange={event => setExporter(event.target.value.toUpperCase())} /></Label>
-      <Label>HS2 product<Input className="mt-2" maxLength={2} value={hs2} onChange={event => setHs2(event.target.value.replace(/\D/g, ""))} /></Label>
-      <Label>Forecast year<Input className="mt-2" inputMode="numeric" value={year} onChange={event => setYear(event.target.value)} /></Label>
-      <Button className="self-end" disabled={mutation.isPending}>{mutation.isPending ? "Calculating…" : "Run forecast"}</Button>
+    <PageHeader eyebrow={t("forecast.eyebrow")} title={t("forecast.title")} description={t("forecast.description")} breadcrumbs={[{ label: t("common.overview"), href: "/" }, { label: t("forecast.title") }]} metadata={result && <><DatasetVersionBadge version={result.dataset_version} /><DataFreshnessBadge year={result.data_freshness} /></>} />
+    <FilterBar title={t("forecast.definition")}><form onSubmit={event => { event.preventDefault(); mutation.mutate({ importer, exporter, hs2, year: Number(year) }) }}><FilterSection>
+      <Label>{t("forecast.importer")}<Input className="mt-2" maxLength={3} value={importer} onChange={event => setImporter(event.target.value.toUpperCase())} /></Label>
+      <Label>{t("forecast.exporter")}<Input className="mt-2" maxLength={3} value={exporter} onChange={event => setExporter(event.target.value.toUpperCase())} /></Label>
+      <Label>{t("forecast.product")}<Input className="mt-2" maxLength={2} value={hs2} onChange={event => setHs2(event.target.value.replace(/\D/g, ""))} /></Label>
+      <Label>{t("forecast.year")}<Input className="mt-2" inputMode="numeric" value={year} onChange={event => setYear(event.target.value)} /></Label>
+      <Button className="self-end" disabled={mutation.isPending}>{mutation.isPending ? t("forecast.calculating") : t("forecast.run")}</Button>
     </FilterSection></form></FilterBar>
-    {mutation.isError && <div className="mt-6"><ErrorState title="Forecast unavailable" description="The selected lane may have insufficient history, or the active model artifact may be unavailable. Try another lane or review data health." /></div>}
+    {mutation.isError && <div className="mt-6"><ErrorState title={t("forecast.errorTitle")} description={t("forecast.error")} /></div>}
     {result && option && <>
       <div className="mt-6 grid gap-4 sm:grid-cols-3">
-        <KpiCard icon={LineChart} label="Active-model forecast" value={money(result.forecast.value)} detail={`${result.forecast.year} estimate`} />
-        <KpiCard icon={GitCompareArrows} label="Naive baseline" value={money(result.baseline_forecast)} detail="Three-year moving average when available" />
-        <KpiCard label="Model difference" value={percentDifference(result.forecast.value, result.baseline_forecast)} detail="Relative to baseline" />
+        <KpiCard icon={LineChart} label={t("forecast.model")} value={money(result.forecast.value)} detail={t("forecast.estimate", { year: result.forecast.year })} />
+        <KpiCard icon={GitCompareArrows} label={t("forecast.baseline")} value={money(result.baseline_forecast)} detail={t("forecast.baselineDetail")} />
+        <KpiCard label={t("forecast.difference")} value={percentDifference(result.forecast.value, result.baseline_forecast)} detail={t("forecast.baseline")} />
       </div>
       <div className="mt-6 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm">
         <p className="font-medium">Approximate {Math.round(result.forecast.coverage_level * 100)}% prediction interval</p>
