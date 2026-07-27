@@ -2,11 +2,24 @@
 
 import { useEffect, useRef, useState } from "react"
 import type { FeatureCollection, LineString } from "geojson"
-import type { GeoJSONSource, Map as MapLibreMap } from "maplibre-gl"
+import type { GeoJSONSource, Map as MapLibreMap, StyleSpecification } from "maplibre-gl"
 import type { MapFlow } from "@/lib/api"
 
-export const tradeMapStyleUrl =
-  process.env.NEXT_PUBLIC_MAP_STYLE_URL ?? "https://demotiles.maplibre.org/style.json"
+export const tradeMapStyle: StyleSpecification = {
+  version: 8,
+  sources: {
+    openStreetMap: {
+      type: "raster",
+      tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
+      tileSize: 256,
+      attribution: "© OpenStreetMap contributors",
+    },
+  },
+  layers: [
+    { id: "ocean", type: "background", paint: { "background-color": "#dff3f8" } },
+    { id: "open-street-map", type: "raster", source: "openStreetMap", paint: { "raster-opacity": 0.82 } },
+  ],
+}
 
 export function arcCoordinates(start: [number, number], end: [number, number]): [number, number][] {
   const dx = end[0] - start[0]
@@ -37,9 +50,10 @@ export function TradeMap({ flows }: { flows: MapFlow[] }) {
       if (disposed || !containerRef.current) return
       const map = new maplibregl.Map({
         container: containerRef.current,
-        style: tradeMapStyleUrl,
-        center: [45, 30],
-        zoom: 1.3,
+        style: tradeMapStyle,
+        center: [10, 20],
+        zoom: 0.8,
+        minZoom: 0.5,
       })
       map.addControl(new maplibregl.NavigationControl(), "top-right")
       map.once("load", () => setMapReady(true))
@@ -123,5 +137,5 @@ export function TradeMap({ flows }: { flows: MapFlow[] }) {
     if (mapReady) void update()
   }, [flows, mapReady])
 
-  return <div ref={containerRef} aria-label="Directional trade flow map" className="h-[560px] w-full rounded-xl" />
+  return <div ref={containerRef} aria-label="Directional trade flow map" className="h-[clamp(420px,62vh,620px)] w-full rounded-xl" />
 }
