@@ -1,10 +1,11 @@
 "use client"
 
 import Link from "next/link"
-import { AlertCircle, CalendarRange, Database, Info, type LucideIcon } from "lucide-react"
+import { AlertCircle, CalendarRange, CheckCircle2, CircleAlert, Database, Info, LoaderCircle, TrendingDown, TrendingUp, type LucideIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Progress } from "@/components/ui/progress"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
@@ -53,19 +54,27 @@ export function FilterSection({ children, className }: { children: React.ReactNo
   return <div className={cn("grid gap-4 sm:grid-cols-2 xl:grid-cols-5", className)}>{children}</div>
 }
 
-export function KpiCard({ label, value, detail, icon: Icon }: { label: string; value: string; detail?: string; icon?: LucideIcon }) {
+export function KpiCard({ label, value, detail, icon: Icon, trend }: { label: string; value: string; detail?: string; icon?: LucideIcon; trend?: { value: string; direction: "up" | "down" | "flat"; label: string } }) {
   return <Card className="gap-0 py-0 shadow-none"><CardContent className="p-5">
     <div className="flex items-center justify-between gap-4 text-sm text-muted-foreground"><span>{label}</span>{Icon && <Icon aria-hidden="true" className="size-4" />}</div>
-    <p className="mt-5 font-mono text-2xl font-semibold tracking-tight">{value}</p>
+    <p className="mt-5 font-mono text-2xl font-semibold tracking-tight" data-financial-value="true">{value}</p>
+    {trend && <p className={cn("mt-2 flex items-center gap-1 text-xs font-medium", trend.direction === "up" ? "text-success" : trend.direction === "down" ? "text-destructive" : "text-muted-foreground")}>
+      {trend.direction === "up" ? <TrendingUp aria-hidden="true" className="size-3.5" /> : trend.direction === "down" ? <TrendingDown aria-hidden="true" className="size-3.5" /> : null}
+      <span>{trend.value}</span><span className="font-normal text-muted-foreground">{trend.label}</span>
+    </p>}
     {detail && <p className="mt-2 text-xs text-muted-foreground">{detail}</p>}
   </CardContent></Card>
 }
 
+export const MetricCard = KpiCard
+
 export function ChartCard({ title, description, summary, children }: { title: string; description?: string; summary: string; children: React.ReactNode }) {
   return <Card className="shadow-none"><CardHeader><CardTitle className="text-base">{title}</CardTitle>{description && <CardDescription>{description}</CardDescription>}</CardHeader>
-    <CardContent>{children}<p className="sr-only">{summary}</p></CardContent>
+    <CardContent><figure aria-label={title}>{children}<figcaption className="sr-only">{summary}</figcaption></figure></CardContent>
   </Card>
 }
+
+export const ChartContainer = ChartCard
 
 export function EmptyState({ title = "No matching data", description, action }: { title?: string; description: string; action?: React.ReactNode }) {
   return <div className="flex min-h-48 flex-col items-center justify-center rounded-lg border border-dashed p-8 text-center">
@@ -84,6 +93,12 @@ export function LoadingSkeleton({ rows = 3 }: { rows?: number }) {
   return <div aria-label="Loading content" aria-busy="true" className="space-y-3">{Array.from({ length: rows }, (_, index) => <Skeleton key={index} className="h-16 w-full" />)}</div>
 }
 
+export function LoadingState({ label = "Loading data…" }: { label?: string }) {
+  return <div role="status" aria-live="polite" className="flex min-h-32 items-center justify-center gap-3 rounded-xl border bg-card p-6 text-sm text-muted-foreground">
+    <LoaderCircle aria-hidden="true" className="size-5 animate-spin text-primary" /><span>{label}</span>
+  </div>
+}
+
 export function DataFreshnessBadge({ year }: { year: number | string | null | undefined }) {
   return <Badge variant="outline" className="gap-1.5 font-normal"><CalendarRange aria-hidden="true" className="size-3.5" />Data through {year ?? "unknown"}</Badge>
 }
@@ -98,11 +113,35 @@ export function MethodologyTooltip({ text }: { text: string }) {
 
 export function RiskIndicator({ score }: { score: number }) {
   const label = score >= 70 ? "High" : score >= 40 ? "Moderate" : "Lower"
-  const tone = score >= 70 ? "bg-destructive" : score >= 40 ? "bg-amber-500" : "bg-emerald-600"
+  const tone = score >= 70 ? "[&_[data-slot=progress-indicator]]:bg-destructive" : score >= 40 ? "[&_[data-slot=progress-indicator]]:bg-warning" : "[&_[data-slot=progress-indicator]]:bg-success"
   return <div aria-label={`${label} exposure, ${score.toFixed(1)} out of 100`}>
     <div className="flex justify-between text-xs"><span>{label} exposure</span><span className="font-mono">{score.toFixed(1)}/100</span></div>
-    <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted"><div className={cn("h-full rounded-full", tone)} style={{ width: `${Math.min(100, Math.max(0, score))}%` }} /></div>
+    <Progress value={score} className={cn("mt-2", tone)} />
   </div>
+}
+
+export function ConfidenceIndicator({ value, label = "Model confidence" }: { value: number; label?: string }) {
+  const bounded = Math.min(100, Math.max(0, value))
+  const level = bounded >= 80 ? "High" : bounded >= 55 ? "Moderate" : "Low"
+  const tone = bounded >= 80 ? "[&_[data-slot=progress-indicator]]:bg-success" : bounded >= 55 ? "[&_[data-slot=progress-indicator]]:bg-primary" : "[&_[data-slot=progress-indicator]]:bg-warning"
+  return <div aria-label={`${label}: ${level}, ${bounded.toFixed(0)} percent`}>
+    <div className="flex justify-between gap-4 text-xs"><span>{label} · {level}</span><span className="font-mono">{bounded.toFixed(0)}%</span></div>
+    <Progress value={bounded} className={cn("mt-2", tone)} />
+  </div>
+}
+
+type StatusTone = "success" | "warning" | "danger" | "info" | "neutral"
+
+export function StatusBadge({ tone, children }: { tone: StatusTone; children: React.ReactNode }) {
+  const Icon = tone === "success" ? CheckCircle2 : tone === "warning" || tone === "danger" ? CircleAlert : Info
+  return <Badge variant="outline" className={cn(
+    "gap-1.5",
+    tone === "success" && "border-success/30 bg-success-surface text-success",
+    tone === "warning" && "border-warning/30 bg-warning-surface text-warning",
+    tone === "danger" && "border-destructive/30 bg-danger-surface text-destructive",
+    tone === "info" && "border-info/30 bg-info-surface text-info",
+    tone === "neutral" && "text-muted-foreground",
+  )}><Icon aria-hidden="true" className="size-3.5" />{children}</Badge>
 }
 
 export function MetricExplanation({ term, children }: { term: string; children: React.ReactNode }) {
