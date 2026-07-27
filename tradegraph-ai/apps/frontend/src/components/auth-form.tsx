@@ -68,7 +68,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
       if (isLogin) await authApi.login({ email: values.email, password: values.password })
       else await authApi.register(values)
       await refresh()
-      router.push("/countries")
+      router.push("/dashboard")
     } catch (error) {
       form.setError("root", {
         message: error instanceof ApiError ? error.message : t("auth.requestFailed"),
