@@ -3,8 +3,10 @@
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { Bell, ChevronsUpDown, LogOut, Menu, Network, Search, UserRound } from "lucide-react"
+import { useState } from "react"
 
 import { useAuth } from "@/components/auth-provider"
+import { dashboardNavigation } from "@/components/dashboard/dashboard-nav"
 import { DashboardNavigation } from "@/components/dashboard/dashboard-navigation"
 import { LanguageSwitcher } from "@/components/language-switcher"
 import { ThemeToggle } from "@/components/theme-toggle"
@@ -31,11 +33,21 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
   const { user, isLoading, refresh } = useAuth()
+  const [search, setSearch] = useState("")
 
   async function logout() {
     await authApi.logout()
     await refresh()
     router.push("/")
+  }
+
+  function submitSearch(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const query = search.trim().toLowerCase()
+    if (!query) return
+    const page = dashboardNavigation.find((item) => item.label.toLowerCase().includes(query))
+    router.push(page?.href ?? `/dashboard/market?asset=${encodeURIComponent(search.trim().toUpperCase())}`)
+    setSearch("")
   }
 
   if (isLoading) {
@@ -79,9 +91,9 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
               <div className="p-3"><DashboardNavigation pathname={pathname} mobile /></div>
             </SheetContent>
           </Sheet>
-          <form role="search" className="relative hidden min-w-0 max-w-xl flex-1 md:block" onSubmit={(event) => event.preventDefault()}>
+          <form role="search" className="relative hidden min-w-0 max-w-xl flex-1 md:block" onSubmit={submitSearch}>
             <Search aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input className="h-9 pl-9" type="search" aria-label="Search dashboard" placeholder="Search assets, signals, or pages…" />
+            <Input className="h-9 pl-9" type="search" aria-label="Search dashboard" placeholder="Search assets, signals, or pages…" value={search} onChange={(event) => setSearch(event.target.value)} />
           </form>
           <div className="ml-auto flex items-center gap-1">
             <LanguageSwitcher />
