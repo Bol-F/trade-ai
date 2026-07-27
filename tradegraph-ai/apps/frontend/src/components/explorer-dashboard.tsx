@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select } from "@/components/ui/select"
-import { toTimeseriesOption } from "@/lib/chart-transform"
+import { toTimeseriesOption, type TimeseriesMetric } from "@/lib/chart-transform"
 import { catalogApi, savedAnalysesApi, tradeApi, type TradeFilters } from "@/lib/api"
 import { useI18n } from "@/lib/i18n"
 import { queryKeys } from "@/lib/query-options"
@@ -33,12 +33,13 @@ export function ExplorerDashboard() {
   }), [searchParams])
   const [draft, setDraft] = useState<TradeFilters>(initialFilters)
   const [filters, setFilters] = useState<TradeFilters>(initialFilters)
+  const [metric, setMetric] = useState<TimeseriesMetric>("trade_value_usd")
   const countries = useQuery({ queryKey: queryKeys.countries(), queryFn: () => catalogApi.countries("") })
   const overview = useQuery({ queryKey: ["trade-overview", filters], queryFn: () => tradeApi.overview(filters) })
   const timeseries = useQuery({ queryKey: ["trade-timeseries", filters], queryFn: () => tradeApi.timeseries(filters) })
   const partners = useQuery({ queryKey: ["trade-partners", filters], queryFn: () => tradeApi.partners(filters) })
   const products = useQuery({ queryKey: ["trade-top-products", filters], queryFn: () => tradeApi.topProducts(filters) })
-  const chartOption = useMemo(() => toTimeseriesOption(timeseries.data?.data ?? []), [timeseries.data])
+  const chartOption = useMemo(() => toTimeseriesOption(timeseries.data?.data ?? [], metric), [timeseries.data, metric])
   const loading = overview.isLoading || timeseries.isLoading || partners.isLoading || products.isLoading
   const failed = overview.isError || timeseries.isError || partners.isError || products.isError
   const saveAnalysis = useMutation({ mutationFn: () => savedAnalysesApi.create({ title: `Trade analysis ${new Date().toISOString().slice(0, 10)}`, filters, visualization: "explorer" }) })
@@ -73,7 +74,13 @@ export function ExplorerDashboard() {
         <KpiCard icon={Globe2} label={t("explorer.relationships")} value={String(overview.data?.data.partner_count ?? 0)} />
         <KpiCard icon={TrendingUp} label={t("explorer.yoy")} value={overview.data?.data.yoy_change_percent == null ? "—" : `${overview.data.data.yoy_change_percent.toFixed(1)}%`} />
       </div>
-      <div className="mt-6"><ChartCard title={t("explorer.annualTitle")} description={t("explorer.annualDescription")} summary={t("explorer.observations", { count: timeseries.data?.data.length ?? 0 })}>{timeseries.data?.data.length ? <EChart option={chartOption} ariaLabel={t("explorer.annualTitle")} /> : <EmptyState description={t("explorer.adjust")} />}</ChartCard></div>
+      <div className="mt-6"><ChartCard title={metric === "trade_value_usd" ? t("explorer.annualTitle") : t("explorer.quantityTrend")} description={metric === "trade_value_usd" ? t("explorer.annualDescription") : t("explorer.quantityDescription")} summary={t("explorer.interactiveHint")}>
+        <div className="mb-3 flex flex-wrap gap-2" role="group" aria-label={t("explorer.metric")}>
+          <Button size="sm" variant={metric === "trade_value_usd" ? "default" : "outline"} onClick={() => setMetric("trade_value_usd")}>{t("explorer.tradeValue")}</Button>
+          <Button size="sm" variant={metric === "quantity_tons" ? "default" : "outline"} onClick={() => setMetric("quantity_tons")}>{t("explorer.quantity")}</Button>
+        </div>
+        {timeseries.data?.data.length ? <EChart option={chartOption} ariaLabel={metric === "trade_value_usd" ? t("explorer.annualTitle") : t("explorer.quantityTrend")} /> : <EmptyState description={t("explorer.adjust")} />}
+      </ChartCard></div>
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <Ranking title={t("explorer.topPartners")} caption={t("explorer.topPartnersCaption")} nameLabel={t("explorer.name")} valueLabel={t("explorer.tradeValue")} rows={(partners.data?.data ?? []).map(row => ({ id: row.iso3, label: `${row.name} (${row.iso3})`, value: money.format(row.trade_value_usd ?? 0) }))} />
         <Ranking title={t("explorer.topProducts")} caption={t("explorer.topProductsCaption")} nameLabel={t("explorer.name")} valueLabel={t("explorer.tradeValue")} rows={(products.data?.data ?? []).map(row => ({ id: row.code, label: `${row.code} · ${row.name}`, value: money.format(row.trade_value_usd ?? 0) }))} />
