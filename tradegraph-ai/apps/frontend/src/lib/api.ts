@@ -151,6 +151,13 @@ export const authApi = {
     return apiRequest("/auth/register", userSchema, { method: "POST", body: JSON.stringify(data) })
   },
   logout: () => apiRequest("/auth/logout", z.undefined(), { method: "POST" }),
+  changePassword: async (data: { current_password: string; new_password: string }) => {
+    await apiRequest("/auth/csrf", z.object({ csrf_token: z.string() }))
+    return apiRequest("/auth/change-password", z.object({ status: z.literal("password_changed") }), {
+      method: "POST",
+      body: JSON.stringify(data),
+    })
+  },
 }
 
 export const catalogApi = {
