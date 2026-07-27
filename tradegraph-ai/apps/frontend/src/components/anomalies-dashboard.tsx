@@ -48,6 +48,6 @@ export function AnomaliesDashboard() {
 }
 
 function Severity({ value }: { value: TradeAnomaly["severity"] }) {
-  const classes = value === "high_anomaly" ? "bg-destructive/15 text-destructive" : value === "watch" ? "bg-amber-500/15 text-amber-700 dark:text-amber-300" : "bg-muted text-muted-foreground"
+  const classes = value === "high_anomaly" ? "bg-danger-surface text-destructive" : value === "watch" ? "bg-warning-surface text-warning" : "bg-muted text-muted-foreground"
   return <span className={`rounded-full px-2 py-1 text-xs font-medium ${classes}`}>{value.replace("_", " ")}</span>
 }

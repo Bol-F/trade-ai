@@ -21,13 +21,15 @@ const toneIcons = { info: Info, success: CheckCircle2, warning: TriangleAlert, d
 function ToastProvider({ children }: { children: React.ReactNode }) {
   const [messages, setMessages] = React.useState<ToastMessage[]>([])
   const nextId = React.useRef(0)
+  const timers = React.useRef<number[]>([])
   const dismiss = React.useCallback((id: number) => setMessages(current => current.filter(message => message.id !== id)), [])
   const toast = React.useCallback((message: ToastInput) => {
     const id = ++nextId.current
     setMessages(current => [...current, { ...message, id }])
-    window.setTimeout(() => dismiss(id), 5000)
+    timers.current.push(window.setTimeout(() => dismiss(id), 5000))
     return id
   }, [dismiss])
+  React.useEffect(() => () => timers.current.forEach(timer => window.clearTimeout(timer)), [])
   const value = React.useMemo(() => ({ toast, dismiss }), [toast, dismiss])
 
   return (

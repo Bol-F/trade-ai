@@ -11,8 +11,9 @@ const buttonVariants = cva("inline-flex min-h-10 items-center justify-center gap
 }, defaultVariants: { variant: "default", size: "default" } })
 function Button({ className, variant, size, asChild = false, loading = false, children, disabled, ...props }: React.ComponentProps<"button"> & VariantProps<typeof buttonVariants> & { asChild?: boolean; loading?: boolean }) {
   const Comp = asChild ? Slot.Root : "button"
-  return <Comp className={cn(buttonVariants({ variant, size, className }))} aria-busy={loading || undefined} disabled={!asChild ? disabled || loading : undefined} {...props}>
-    {loading && <LoaderCircle aria-hidden="true" className="animate-spin" />}
+  const showLoader = loading && !asChild
+  return <Comp data-slot="button" className={cn(buttonVariants({ variant, size, className }))} aria-busy={loading || undefined} disabled={!asChild ? disabled || loading : undefined} {...props}>
+    {showLoader && <LoaderCircle aria-hidden="true" className="animate-spin" />}
     {children}
   </Comp>
 }
