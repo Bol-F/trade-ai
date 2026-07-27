@@ -13,5 +13,5 @@ export function Providers({ children }: { children: React.ReactNode }) {
       },
     },
   }))
-  return <ThemeProvider attribute="class" defaultTheme="system" enableSystem><I18nProvider><QueryClientProvider client={queryClient}><AuthProvider>{children}</AuthProvider></QueryClientProvider></I18nProvider></ThemeProvider>
+  return <ThemeProvider attribute="class" defaultTheme="dark" enableSystem><I18nProvider><QueryClientProvider client={queryClient}><AuthProvider>{children}</AuthProvider></QueryClientProvider></I18nProvider></ThemeProvider>
 }
