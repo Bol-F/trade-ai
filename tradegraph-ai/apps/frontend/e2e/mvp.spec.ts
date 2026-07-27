@@ -460,6 +460,7 @@ test("dashboard protects unauthorized users and remains overflow-free at require
   await page.getByLabel("Email").fill("mvp@example.com");
   await page.getByLabel("Password").fill("StrongPass123!");
   await page.getByRole("button", { name: "Log in" }).click();
+  await expect(page.getByRole("heading", { name: "Overview" })).toBeVisible();
 
   const widths = [1440, 1280, 1024, 768, 430, 390, 360];
   const routes = [
@@ -590,7 +591,7 @@ test("responsive, dark mode, URL filters, and reference screenshots", async ({
   page,
 }) => {
   await mockApi(page, "admin");
-  const screenshotDir = join(process.cwd(), "e2e", "screenshots");
+  const screenshotDir = join(process.cwd(), "test-results", "screenshots");
   await mkdir(screenshotDir, { recursive: true });
 
   await page.goto("/");
