@@ -19,7 +19,7 @@ export function DashboardNavigation({ pathname, mobile = false }: { pathname: st
             href={href}
             aria-current={active(pathname, href) ? "page" : undefined}
             className={cn(
-              "flex min-h-10 items-center gap-3 rounded-lg px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
+              "flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
               active(pathname, href) && "bg-primary/10 text-primary",
             )}
           >

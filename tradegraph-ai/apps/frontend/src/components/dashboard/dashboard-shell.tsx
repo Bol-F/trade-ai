@@ -114,7 +114,11 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             </DropdownMenu>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="max-w-44 gap-2 px-2">
+                <Button
+                  variant="ghost"
+                  className="max-w-44 gap-2 px-2"
+                  aria-label={`Open account menu for ${user.first_name || user.email}`}
+                >
                   <span className="grid size-8 place-items-center rounded-full bg-muted"><UserRound aria-hidden="true" className="size-4" /></span>
                   <span className="hidden truncate text-sm sm:inline">{user.first_name || user.email}</span>
                   <ChevronsUpDown aria-hidden="true" className="size-3.5 text-muted-foreground" />
