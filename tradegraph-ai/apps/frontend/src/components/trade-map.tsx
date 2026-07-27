@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react"
 import type { FeatureCollection, LineString } from "geojson"
 import type { GeoJSONSource, Map as MapLibreMap, StyleSpecification } from "maplibre-gl"
 import type { MapFlow } from "@/lib/api"
+import { dataVisualizationTokens } from "@/lib/design-tokens"
 
 export const tradeMapStyle: StyleSpecification = {
   version: 8,
@@ -16,7 +17,7 @@ export const tradeMapStyle: StyleSpecification = {
     },
   },
   layers: [
-    { id: "ocean", type: "background", paint: { "background-color": "#dff3f8" } },
+    { id: "ocean", type: "background", paint: { "background-color": dataVisualizationTokens.mapBackground } },
     { id: "open-street-map", type: "raster", source: "openStreetMap", paint: { "raster-opacity": 0.82 } },
   ],
 }
@@ -105,7 +106,7 @@ export function TradeMap({ flows }: { flows: MapFlow[] }) {
         type: "line",
         source: "trade-flows",
         paint: {
-          "line-color": "#0d9488",
+          "line-color": dataVisualizationTokens.mapFlow,
           "line-opacity": 0.8,
           "line-width": ["interpolate", ["linear"], ["get", "value"], 0, 1, 15000000, 8],
         },
@@ -121,7 +122,7 @@ export function TradeMap({ flows }: { flows: MapFlow[] }) {
           "text-size": 15,
           "text-rotation-alignment": "map",
         },
-        paint: { "text-color": "#0f766e" },
+        paint: { "text-color": dataVisualizationTokens.mapArrow },
       })
       map.on("mouseenter", "trade-lines", (event) => {
         map.getCanvas().style.cursor = "pointer"

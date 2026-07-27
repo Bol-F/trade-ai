@@ -104,7 +104,7 @@ export function CountryAnalyticsProfile({ iso3 }: { iso3: string }) {
               <div><dt className="text-muted-foreground">Quantity data</dt><dd>{data.exposure.quantity_data_available ? "Available" : "Limited"}</dd></div>
             </dl>
             {(data.exposure.insufficient_history || !data.exposure.quantity_data_available) && (
-              <p role="status" className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm">
+              <p role="status" className="rounded-lg border border-warning/30 bg-warning-surface p-3 text-sm">
                 Interpret cautiously: {data.exposure.insufficient_history ? "fewer than two annual observations. " : ""}
                 {!data.exposure.quantity_data_available ? "Quantity history is incomplete." : ""}
               </p>

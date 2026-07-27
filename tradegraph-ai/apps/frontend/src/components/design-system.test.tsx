@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react"
 import { describe, expect, it } from "vitest"
-import { EmptyState, ErrorState, PageHeader, RiskIndicator } from "@/components/design-system"
+import { ConfidenceIndicator, EmptyState, ErrorState, LoadingState, PageHeader, RiskIndicator, StatusBadge } from "@/components/design-system"
 
 describe("design system states", () => {
   it("provides a navigable page hierarchy", () => {
@@ -20,5 +20,16 @@ describe("design system states", () => {
     render(<RiskIndicator score={72} />)
     expect(screen.getByText("High exposure")).toBeInTheDocument()
     expect(screen.getByLabelText("High exposure, 72.0 out of 100")).toBeInTheDocument()
+  })
+
+  it("bounds confidence and communicates status with text and icon", () => {
+    render(<><ConfidenceIndicator value={140} /><StatusBadge tone="success">Model validated</StatusBadge></>)
+    expect(screen.getByLabelText("Model confidence: High, 100 percent")).toBeInTheDocument()
+    expect(screen.getByText("Model validated")).toBeInTheDocument()
+  })
+
+  it("announces indeterminate loading work", () => {
+    render(<LoadingState label="Refreshing market evidence…" />)
+    expect(screen.getByRole("status")).toHaveTextContent("Refreshing market evidence…")
   })
 })
