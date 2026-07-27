@@ -8,6 +8,7 @@ import { z } from "zod"
 
 import { useAuth } from "@/components/auth-provider"
 import { PageContainer } from "@/components/page-container"
+import { LoadingState } from "@/components/design-system"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -24,7 +25,7 @@ type AuthValues = {
 export function AuthForm({ mode }: { mode: "login" | "register" }) {
   const isLogin = mode === "login"
   const router = useRouter()
-  const { refresh } = useAuth()
+  const { refresh, isLoading } = useAuth()
   const { t } = useI18n()
   const schema = z
     .object({
@@ -73,6 +74,10 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
         message: error instanceof ApiError ? error.message : t("auth.requestFailed"),
       })
     }
+  }
+
+  if (isLoading) {
+    return <PageContainer className="flex min-h-[calc(100vh-4rem)] items-center justify-center py-12"><div className="w-full max-w-md"><LoadingState label={t("auth.wait")} /></div></PageContainer>
   }
 
   return (

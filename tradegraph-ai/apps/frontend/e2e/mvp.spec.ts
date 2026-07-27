@@ -163,7 +163,8 @@ test("responsive, dark mode, URL filters, and reference screenshots", async ({ p
   await page.screenshot({ path: join(screenshotDir, "mobile-navigation.png"), fullPage: true })
 
   await page.keyboard.press("Escape")
-  await page.getByRole("button", { name: "Toggle theme" }).click()
   await expect(page.locator("html")).toHaveClass(/dark/)
-  await page.screenshot({ path: join(screenshotDir, "explorer-mobile-dark.png"), fullPage: true })
+  await page.getByRole("button", { name: "Toggle theme" }).click()
+  await expect(page.locator("html")).toHaveClass(/light/)
+  await page.screenshot({ path: join(screenshotDir, "explorer-mobile-light.png"), fullPage: true })
 })

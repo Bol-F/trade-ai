@@ -48,7 +48,7 @@ services that the application does not provide.
 4. Button, input, and select states need stronger focus, loading, touch-target, and invalid behavior.
 5. Missing reusable primitives include icon button, search input, checkbox, radio group, switch,
    dialog/modal, alert, progress, pagination, status badge, confidence indicator, and chart
-   container. Toast infrastructure is intentionally deferred until a product mutation consumes it;
+   container. Toast infrastructure should use a shared provider instead of page-local notices;
    shipping a global live region without a consumer would add unused client state.
 6. Analytics-specific components currently share one large `design-system.tsx` module. This task
    will improve APIs and semantic tokens without a risky page-by-page migration.

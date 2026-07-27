@@ -10,11 +10,12 @@ const buttonVariants = cva("inline-flex min-h-10 items-center justify-center gap
   size: { default: "h-10 px-4 py-2", sm: "min-h-9 px-3", lg: "h-11 px-6", icon: "size-10 p-0" },
 }, defaultVariants: { variant: "default", size: "default" } })
 function Button({ className, variant, size, asChild = false, loading = false, children, disabled, ...props }: React.ComponentProps<"button"> & VariantProps<typeof buttonVariants> & { asChild?: boolean; loading?: boolean }) {
-  const Comp = asChild ? Slot.Root : "button"
-  const showLoader = loading && !asChild
-  return <Comp data-slot="button" className={cn(buttonVariants({ variant, size, className }))} aria-busy={loading || undefined} disabled={!asChild ? disabled || loading : undefined} {...props}>
-    {showLoader && <LoaderCircle aria-hidden="true" className="animate-spin" />}
-    {children}
-  </Comp>
+  const classes = cn(buttonVariants({ variant, size, className }))
+  if (asChild) {
+    return <Slot.Root data-slot="button" className={classes} aria-busy={loading || undefined} {...props}>{children}</Slot.Root>
+  }
+  return <button data-slot="button" className={classes} aria-busy={loading || undefined} disabled={disabled || loading} {...props}>
+    {loading && <LoaderCircle aria-hidden="true" className="animate-spin" />}{children}
+  </button>
 }
 export { Button, buttonVariants }
