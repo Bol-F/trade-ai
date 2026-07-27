@@ -7,6 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\" \"e2e/**/*.ts\"",
     "format": "prettier --write .",
     "test": "vitest",
     "test:e2e": "playwright test"
@@ -29,6 +31,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.12.1",
     "@playwright/test": "^1.58.2",
     "@tailwindcss/postcss": "^4",
     "@testing-library/jest-dom": "^6.9.1",
@@ -46,12 +49,7 @@
     "vitest": "^4.0.18"
   },
   "overrides": {
-    "minimatch@3.1.5": {
-      "brace-expansion": "1.1.16"
-    },
-    "minimatch@10.2.5": {
-      "brace-expansion": "5.0.8"
-    },
+    "brace-expansion": "5.0.8",
     "postcss": "8.5.23",
     "sharp": "0.35.3"
   }

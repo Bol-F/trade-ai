@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test"
+import AxeBuilder from "@axe-core/playwright"
 import { mkdir } from "node:fs/promises"
 import { join } from "node:path"
 
@@ -53,6 +54,19 @@ async function mockApi(page: Page, role: "user" | "admin" = "user") {
   })
 }
 
+async function expectNoAccessibilityViolations(page: Page) {
+  const results = await new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+    .analyze()
+
+  expect(
+    results.violations,
+    results.violations
+      .map((violation) => `${violation.id}: ${violation.help} (${violation.nodes.length} nodes)`)
+      .join("\n"),
+  ).toEqual([])
+}
+
 test("register, explore, view profile, forecast, save and logout", async ({ page }) => {
   await mockApi(page)
   await page.goto("/register")
@@ -86,6 +100,71 @@ test("login flow", async ({ page }) => {
   await page.getByLabel("Password").fill("StrongPass123!")
   await page.getByRole("button", { name: "Log in" }).click()
   await expect(page).toHaveURL(/dashboard/)
+})
+
+test("public, authentication, and dashboard surfaces pass automated accessibility checks", async ({
+  page,
+}) => {
+  await mockApi(page)
+
+  await page.goto("/")
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible()
+  await expectNoAccessibilityViolations(page)
+
+  await page.goto("/login")
+  await expect(page.getByRole("heading", { name: "Welcome back" })).toBeVisible()
+  await expectNoAccessibilityViolations(page)
+
+  await page.getByLabel("Email").fill("mvp@example.com")
+  await page.getByLabel("Password").fill("StrongPass123!")
+  await page.getByRole("button", { name: "Log in" }).click()
+  await expect(page.getByRole("heading", { name: "Overview" })).toBeVisible()
+  await expectNoAccessibilityViolations(page)
+})
+
+test("dashboard protects unauthorized users and remains overflow-free at required breakpoints", async ({
+  page,
+}) => {
+  await mockApi(page)
+  await page.goto("/dashboard")
+  await expect(page.getByRole("heading", { name: "Sign in to open the dashboard" })).toBeVisible()
+  await expect(page.getByRole("link", { name: "Sign In" })).toHaveAttribute("href", "/login")
+
+  await page.goto("/login")
+  await page.getByLabel("Email").fill("mvp@example.com")
+  await page.getByLabel("Password").fill("StrongPass123!")
+  await page.getByRole("button", { name: "Log in" }).click()
+
+  const widths = [1440, 1280, 1024, 768, 430, 390, 360]
+  const routes = [
+    "/dashboard",
+    "/dashboard/signals",
+    "/dashboard/market",
+    "/dashboard/portfolio",
+    "/dashboard/watchlist",
+    "/dashboard/alerts",
+    "/dashboard/settings",
+  ]
+
+  for (const width of widths) {
+    await page.setViewportSize({ width, height: width <= 430 ? 844 : 900 })
+    for (const route of routes) {
+      await page.goto(route)
+      await expect(page.locator("main")).toBeVisible()
+      expect(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+        ),
+        `${route} overflows at ${width}px`,
+      ).toBe(true)
+    }
+    if (width < 1024) {
+      await page.getByRole("button", { name: "Open dashboard navigation" }).click()
+      await expect(page.getByRole("dialog")).toBeVisible()
+      await page.keyboard.press("Escape")
+      await expect(page.getByRole("dialog")).toBeHidden()
+    }
+  }
 })
 
 test("authenticated dashboard navigation and core interactions", async ({ page }) => {
