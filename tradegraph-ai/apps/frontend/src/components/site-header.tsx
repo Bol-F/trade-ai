@@ -49,6 +49,7 @@ export function SiteHeader() {
   const moreIsActive = secondaryLinks.some(([, href]) => pathname.startsWith(href)) || pathname.startsWith("/workspace")
 
   if (pathname === "/") return <LandingHeader />
+  if (pathname.startsWith("/dashboard")) return null
 
   return <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur">
     <PageContainer className="flex min-h-16 items-center gap-3">
