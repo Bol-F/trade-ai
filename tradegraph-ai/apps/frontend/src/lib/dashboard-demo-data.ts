@@ -64,12 +64,23 @@ export const holdings = [
   { asset: "Apple", ticker: "AAPL", quantity: 105, average: 192.54, current: 224.82, value: 23606.1, pnl: 3389.4, allocation: 9.5 },
 ] as const
 
-export const watchlistAssets = [
+export type WatchlistAsset = {
+  asset: string
+  ticker: string
+  price: number
+  change: number
+  volume: string
+  aiScore: number
+  signal: SignalType
+  alert: "Enabled" | "Disabled"
+}
+
+export const watchlistAssets: WatchlistAsset[] = [
   { asset: "NVIDIA", ticker: "NVDA", price: 128.44, change: 2.8, volume: "312.4M", aiScore: 84, signal: "Bullish", alert: "Enabled" },
   { asset: "Microsoft", ticker: "MSFT", price: 442.31, change: 0.7, volume: "18.2M", aiScore: 67, signal: "Watch", alert: "Enabled" },
   { asset: "EUR / USD", ticker: "EURUSD", price: 1.0842, change: -0.3, volume: "N/A", aiScore: 73, signal: "Bearish", alert: "Disabled" },
   { asset: "Apple", ticker: "AAPL", price: 224.82, change: 1.1, volume: "44.6M", aiScore: 78, signal: "Bullish", alert: "Enabled" },
-] as const
+]
 
 export type DemoAlert = {
   id: string
