@@ -1,5 +1,5 @@
-import { SignalsDashboard } from "@/components/dashboard/signals-dashboard"
+import { SignalsDashboard } from "@/components/dashboard/signals-dashboard";
 
 export default function SignalsPage() {
-  return <SignalsDashboard />
+  return <SignalsDashboard />;
 }

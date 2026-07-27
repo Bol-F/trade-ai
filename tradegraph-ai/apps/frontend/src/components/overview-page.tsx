@@ -1,8 +1,14 @@
-"use client"
+"use client";
 
-import { useQuery } from "@tanstack/react-query"
-import { ArrowRight, BarChart3, Boxes, Globe2, ShieldCheck } from "lucide-react"
-import Link from "next/link"
+import { useQuery } from "@tanstack/react-query";
+import {
+  ArrowRight,
+  BarChart3,
+  Boxes,
+  Globe2,
+  ShieldCheck,
+} from "lucide-react";
+import Link from "next/link";
 
 import {
   DataFreshnessBadge,
@@ -11,35 +17,39 @@ import {
   KpiCard,
   LoadingSkeleton,
   PageHeader,
-} from "@/components/design-system"
-import { PageContainer } from "@/components/page-container"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { catalogApi, datasetsApi } from "@/lib/api"
-import { useI18n } from "@/lib/i18n"
-import { queryKeys } from "@/lib/query-options"
+} from "@/components/design-system";
+import { PageContainer } from "@/components/page-container";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { catalogApi, datasetsApi } from "@/lib/api";
+import { useI18n } from "@/lib/i18n";
+import { queryKeys } from "@/lib/query-options";
 
 export function OverviewPage() {
-  const { t } = useI18n()
+  const { t } = useI18n();
   const countries = useQuery({
     queryKey: queryKeys.countries(),
     queryFn: () => catalogApi.countries(""),
-  })
+  });
   const products = useQuery({
     queryKey: queryKeys.products(),
     queryFn: () => catalogApi.products(""),
-  })
-  const sources = useQuery({ queryKey: ["data-sources"], queryFn: datasetsApi.sources })
-  const loading = countries.isLoading || products.isLoading || sources.isLoading
-  const failed = countries.isError || products.isError || sources.isError
-  const meta = sources.data?.meta
-  const source = sources.data?.data[0]
+  });
+  const sources = useQuery({
+    queryKey: ["data-sources"],
+    queryFn: datasetsApi.sources,
+  });
+  const loading =
+    countries.isLoading || products.isLoading || sources.isLoading;
+  const failed = countries.isError || products.isError || sources.isError;
+  const meta = sources.data?.meta;
+  const source = sources.data?.data[0];
   const questions = [
     t("overview.question1"),
     t("overview.question2"),
     t("overview.question3"),
     t("overview.question4"),
-  ]
+  ];
 
   return (
     <PageContainer className="py-10 sm:py-14">
@@ -55,7 +65,9 @@ export function OverviewPage() {
               </Link>
             </Button>
             <Button variant="outline" asChild>
-              <Link href="/explorer?importer=UZB&product=10">{t("overview.example")}</Link>
+              <Link href="/explorer?importer=UZB&product=10">
+                {t("overview.example")}
+              </Link>
             </Button>
           </>
         }
@@ -117,7 +129,9 @@ export function OverviewPage() {
           >
             <Card className="shadow-none">
               <CardHeader>
-                <CardTitle id="questions-title">{t("overview.questions")}</CardTitle>
+                <CardTitle id="questions-title">
+                  {t("overview.questions")}
+                </CardTitle>
               </CardHeader>
               <CardContent className="grid gap-3 sm:grid-cols-2">
                 {questions.map((question) => (
@@ -140,7 +154,8 @@ export function OverviewPage() {
                   href="/methodology"
                   className="inline-flex items-center gap-1 font-medium text-foreground hover:underline"
                 >
-                  {t("overview.reviewMethodology")} <ArrowRight className="size-4" />
+                  {t("overview.reviewMethodology")}{" "}
+                  <ArrowRight className="size-4" />
                 </Link>
               </CardContent>
             </Card>
@@ -148,5 +163,5 @@ export function OverviewPage() {
         </>
       )}
     </PageContainer>
-  )
+  );
 }

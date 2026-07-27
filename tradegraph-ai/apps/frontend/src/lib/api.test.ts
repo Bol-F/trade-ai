@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest"
+import { describe, expect, it } from "vitest";
 
-import { normalizeHsProduct } from "@/lib/api"
+import { normalizeHsProduct } from "@/lib/api";
 
 describe("normalizeHsProduct", () => {
   it.each([
@@ -11,10 +11,10 @@ describe("normalizeHsProduct", () => {
     ["0101", "0101"],
     ["010101", "010101"],
   ])("normalizes %s to a complete HS level", (input, expected) => {
-    expect(normalizeHsProduct(input)).toBe(expected)
-  })
+    expect(normalizeHsProduct(input)).toBe(expected);
+  });
 
   it("leaves invalid input unchanged for API validation", () => {
-    expect(normalizeHsProduct("1234567")).toBe("1234567")
-  })
-})
+    expect(normalizeHsProduct("1234567")).toBe("1234567");
+  });
+});

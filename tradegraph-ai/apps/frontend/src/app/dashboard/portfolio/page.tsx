@@ -1,5 +1,5 @@
-import { PortfolioDashboard } from "@/components/dashboard/portfolio-dashboard"
+import { PortfolioDashboard } from "@/components/dashboard/portfolio-dashboard";
 
 export default function PortfolioPage() {
-  return <PortfolioDashboard />
+  return <PortfolioDashboard />;
 }

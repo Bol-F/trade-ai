@@ -1,13 +1,13 @@
-"use client"
+"use client";
 
-import { Languages } from "lucide-react"
+import { Languages } from "lucide-react";
 
-import { Button } from "@/components/ui/button"
-import { useI18n } from "@/lib/i18n"
+import { Button } from "@/components/ui/button";
+import { useI18n } from "@/lib/i18n";
 
 export function LanguageSwitcher() {
-  const { locale, setLocale, t } = useI18n()
-  const nextLocale = locale === "en" ? "ru" : "en"
+  const { locale, setLocale, t } = useI18n();
+  const nextLocale = locale === "en" ? "ru" : "en";
 
   return (
     <Button
@@ -21,5 +21,5 @@ export function LanguageSwitcher() {
       <Languages className="size-4" />
       <span className="font-mono text-xs uppercase">{locale}</span>
     </Button>
-  )
+  );
 }

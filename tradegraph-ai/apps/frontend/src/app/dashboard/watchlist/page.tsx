@@ -1,5 +1,5 @@
-import { WatchlistDashboard } from "@/components/dashboard/watchlist-dashboard"
+import { WatchlistDashboard } from "@/components/dashboard/watchlist-dashboard";
 
 export default function WatchlistPage() {
-  return <WatchlistDashboard />
+  return <WatchlistDashboard />;
 }

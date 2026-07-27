@@ -1,5 +1,5 @@
-import { DataSourcesPage } from "@/components/data-sources-page"
+import { DataSourcesPage } from "@/components/data-sources-page";
 
 export default function Page() {
-  return <DataSourcesPage />
+  return <DataSourcesPage />;
 }

@@ -1,16 +1,16 @@
-"use client"
+"use client";
 
-import { BarChart, LineChart, ScatterChart } from "echarts/charts"
+import { BarChart, LineChart, ScatterChart } from "echarts/charts";
 import {
   DataZoomComponent,
   GridComponent,
   LegendComponent,
   ToolboxComponent,
   TooltipComponent,
-} from "echarts/components"
-import { init, use, type EChartsOption, type EChartsType } from "echarts/core"
-import { CanvasRenderer } from "echarts/renderers"
-import { useEffect, useRef } from "react"
+} from "echarts/components";
+import { init, use, type EChartsOption, type EChartsType } from "echarts/core";
+import { CanvasRenderer } from "echarts/renderers";
+import { useEffect, useRef } from "react";
 
 use([
   BarChart,
@@ -22,28 +22,41 @@ use([
   ToolboxComponent,
   TooltipComponent,
   CanvasRenderer,
-])
+]);
 
-export function EChart({ option, ariaLabel = "Data chart" }: { option: EChartsOption; ariaLabel?: string }) {
-  const element = useRef<HTMLDivElement>(null)
-  const chart = useRef<EChartsType>(null)
+export function EChart({
+  option,
+  ariaLabel = "Data chart",
+}: {
+  option: EChartsOption;
+  ariaLabel?: string;
+}) {
+  const element = useRef<HTMLDivElement>(null);
+  const chart = useRef<EChartsType>(null);
 
   useEffect(() => {
-    if (!element.current) return
-    chart.current = init(element.current)
-    const observer = new ResizeObserver(() => chart.current?.resize())
-    observer.observe(element.current)
+    if (!element.current) return;
+    chart.current = init(element.current);
+    const observer = new ResizeObserver(() => chart.current?.resize());
+    observer.observe(element.current);
 
     return () => {
-      observer.disconnect()
-      chart.current?.dispose()
-      chart.current = null
-    }
-  }, [])
+      observer.disconnect();
+      chart.current?.dispose();
+      chart.current = null;
+    };
+  }, []);
 
   useEffect(() => {
-    chart.current?.setOption(option, { notMerge: true })
-  }, [option])
+    chart.current?.setOption(option, { notMerge: true });
+  }, [option]);
 
-  return <div ref={element} className="h-[340px] w-full" role="img" aria-label={ariaLabel} />
+  return (
+    <div
+      ref={element}
+      className="h-[340px] w-full"
+      role="img"
+      aria-label={ariaLabel}
+    />
+  );
 }

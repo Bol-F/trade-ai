@@ -1,5 +1,5 @@
-import { AlertsDashboard } from "@/components/dashboard/alerts-dashboard"
+import { AlertsDashboard } from "@/components/dashboard/alerts-dashboard";
 
 export default function AlertsPage() {
-  return <AlertsDashboard />
+  return <AlertsDashboard />;
 }
