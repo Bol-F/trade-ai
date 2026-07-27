@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation"
 import { ChevronDown, Menu, Network } from "lucide-react"
 import { useAuth } from "@/components/auth-provider"
 import { LanguageSwitcher } from "@/components/language-switcher"
+import { LandingHeader } from "@/components/landing-header"
 import { PageContainer } from "@/components/page-container"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Button } from "@/components/ui/button"
@@ -46,6 +47,8 @@ export function SiteHeader() {
   )
   const secondaryLinks = [...analysisLinks, ...resourceLinks]
   const moreIsActive = secondaryLinks.some(([, href]) => pathname.startsWith(href)) || pathname.startsWith("/workspace")
+
+  if (pathname === "/") return <LandingHeader />
 
   return <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur">
     <PageContainer className="flex min-h-16 items-center gap-3">
