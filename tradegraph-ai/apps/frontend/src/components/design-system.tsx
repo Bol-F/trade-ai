@@ -341,7 +341,11 @@ export function RiskIndicator({ score }: { score: number }) {
         <span>{label} exposure</span>
         <span className="font-mono">{score.toFixed(1)}/100</span>
       </div>
-      <Progress value={score} className={cn("mt-2", tone)} />
+      <Progress
+        value={score}
+        aria-label={`${label} exposure`}
+        className={cn("mt-2", tone)}
+      />
     </div>
   );
 }
@@ -369,7 +373,11 @@ export function ConfidenceIndicator({
         </span>
         <span className="font-mono">{bounded.toFixed(0)}%</span>
       </div>
-      <Progress value={bounded} className={cn("mt-2", tone)} />
+      <Progress
+        value={bounded}
+        aria-label={label}
+        className={cn("mt-2", tone)}
+      />
     </div>
   );
 }

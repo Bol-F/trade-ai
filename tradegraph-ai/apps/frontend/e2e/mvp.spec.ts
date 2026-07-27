@@ -476,7 +476,7 @@ test("dashboard protects unauthorized users and remains overflow-free at require
     await page.setViewportSize({ width, height: width <= 430 ? 844 : 900 });
     for (const route of routes) {
       await page.goto(route);
-      await expect(page.locator("main")).toBeVisible();
+      await expect(page.locator("#dashboard-content")).toBeVisible();
       expect(
         await page.evaluate(
           () =>

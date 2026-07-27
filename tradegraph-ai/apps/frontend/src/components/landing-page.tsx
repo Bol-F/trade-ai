@@ -265,7 +265,7 @@ export function LandingPage() {
                 >
                   {value}
                 </dd>
-                <p className="mt-1 text-xs text-muted-foreground">{detail}</p>
+                <dd className="mt-1 text-xs text-muted-foreground">{detail}</dd>
               </div>
             ))}
           </dl>
