@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { arcCoordinates, tradeMapStyleUrl } from "@/components/trade-map"
+import { arcCoordinates, tradeMapStyle } from "@/components/trade-map"
 
 describe("trade map arcs", () => {
   it("preserves endpoints and creates an aggregated curved path", () => {
@@ -10,7 +10,11 @@ describe("trade map arcs", () => {
     expect(points[12]).not.toEqual([5, 5])
   })
 
-  it("uses an HTTPS map style that can be explicitly allowlisted", () => {
-    expect(new URL(tradeMapStyleUrl).protocol).toBe("https:")
+  it("owns the style document and keeps a background when raster tiles fail", () => {
+    expect(tradeMapStyle.version).toBe(8)
+    expect(tradeMapStyle.layers).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: "ocean", type: "background" }),
+    ]))
+    expect(tradeMapStyle.sources).toHaveProperty("openStreetMap")
   })
 })
