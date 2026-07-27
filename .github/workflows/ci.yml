@@ -2,11 +2,21 @@ name: CI
 
 on:
   push:
+    branches:
+      - main
   pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   backend:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     defaults:
       run:
         working-directory: tradegraph-ai
@@ -34,6 +44,7 @@ jobs:
 
   frontend:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     defaults:
       run:
         working-directory: tradegraph-ai/apps/frontend
@@ -45,10 +56,14 @@ jobs:
           cache: npm
           cache-dependency-path: tradegraph-ai/apps/frontend/package-lock.json
       - run: npm ci
+      - name: Dependency audit
+        run: npm audit --audit-level=high
+      - name: Frontend format check
+        run: npm run format:check
       - name: Frontend lint
         run: npm run lint
       - name: Frontend type check
-        run: npx tsc --noEmit
+        run: npm run typecheck
       - name: Frontend tests
         run: npm test -- --run
       - name: Frontend build
@@ -60,6 +75,7 @@ jobs:
 
   docker:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     defaults:
       run:
         working-directory: tradegraph-ai
