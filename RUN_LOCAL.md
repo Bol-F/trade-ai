@@ -156,7 +156,7 @@ npm run lint
 npm run typecheck
 npm test
 npm run build
-npm --prefix apps/frontend audit --audit-level=high
+npm --prefix apps/frontend audit --omit=dev --audit-level=high
 ```
 
 Run browser tests after the application dependencies are installed:

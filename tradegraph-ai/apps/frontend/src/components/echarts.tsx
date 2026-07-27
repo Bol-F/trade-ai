@@ -8,11 +8,16 @@ import {
   ToolboxComponent,
   TooltipComponent,
 } from "echarts/components";
-import { init, use, type EChartsOption, type EChartsType } from "echarts/core";
+import {
+  init,
+  use as registerEChartsModules,
+  type EChartsCoreOption,
+  type EChartsType,
+} from "echarts/core";
 import { CanvasRenderer } from "echarts/renderers";
 import { useEffect, useRef } from "react";
 
-use([
+registerEChartsModules([
   BarChart,
   LineChart,
   ScatterChart,
@@ -28,7 +33,7 @@ export function EChart({
   option,
   ariaLabel = "Data chart",
 }: {
-  option: EChartsOption;
+  option: EChartsCoreOption;
   ariaLabel?: string;
 }) {
   const element = useRef<HTMLDivElement>(null);

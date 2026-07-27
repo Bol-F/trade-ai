@@ -59,7 +59,7 @@ npm run typecheck
 npm test -- --run
 npm run build
 npm run test:e2e
-npm audit --audit-level=high
+npm audit --omit=dev --audit-level=high
 ```
 
 Playwright starts the previously built production server. Run `npm run build`

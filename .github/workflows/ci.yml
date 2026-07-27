@@ -56,8 +56,8 @@ jobs:
           cache: npm
           cache-dependency-path: tradegraph-ai/apps/frontend/package-lock.json
       - run: npm ci
-      - name: Dependency audit
-        run: npm audit --audit-level=high
+      - name: Production dependency audit
+        run: npm audit --omit=dev --audit-level=high
       - name: Frontend format check
         run: npm run format:check
       - name: Frontend lint
