@@ -1,5 +1,5 @@
-import { MapDashboard } from "@/components/map-dashboard"
+import { MapDashboard } from "@/components/map-dashboard";
 
 export default function MapPage() {
-  return <MapDashboard />
+  return <MapDashboard />;
 }

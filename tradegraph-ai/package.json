@@ -5,6 +5,8 @@
     "dev": "npm --prefix apps/frontend run dev",
     "build": "npm --prefix apps/frontend run build",
     "lint": "npm --prefix apps/frontend run lint",
+    "typecheck": "npm --prefix apps/frontend run typecheck",
+    "format:check": "npm --prefix apps/frontend run format:check",
     "test": "npm --prefix apps/frontend test -- --run",
     "test:e2e": "npm --prefix apps/frontend run test:e2e",
     "format": "npm --prefix apps/frontend run format",

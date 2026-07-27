@@ -7,4 +7,4 @@ export const dataVisualizationTokens = {
   mapBackground: "#dbeafe",
   mapFlow: "#2563eb",
   mapArrow: "#1d4ed8",
-} as const
+} as const;

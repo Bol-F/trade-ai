@@ -1,5 +1,5 @@
-import { SupplierFinder } from "@/components/supplier-finder"
+import { SupplierFinder } from "@/components/supplier-finder";
 
 export default function SupplierFinderPage() {
-  return <SupplierFinder />
+  return <SupplierFinder />;
 }

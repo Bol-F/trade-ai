@@ -1,36 +1,95 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# TradeGraph AI frontend
 
-## Getting Started
+This directory contains the Next.js App Router application for TradeGraph AI.
+It provides the public landing experience, authentication, international-trade
+analysis pages, and the authenticated portfolio-style dashboard.
 
-First, run the development server:
+Dashboard market prices, holdings, signals, and alerts are illustrative demo
+data until matching backend services are implemented. Authentication, account
+identity, password changes, saved analyses, and international-trade APIs use the
+real Django backend.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Requirements
+
+- Node.js 22 or newer
+- npm (the committed `package-lock.json` is authoritative)
+- The Django API at `http://localhost:8000`, unless
+  `NEXT_PUBLIC_API_URL` points elsewhere
+
+Install reproducibly:
+
+```powershell
+npm ci
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Start development:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```powershell
+npm run dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Open <http://localhost:3000>. For database, sample-data, and backend setup, see
+[the repository local-development guide](../../../RUN_LOCAL.md).
 
-## Learn More
+## Environment
 
-To learn more about Next.js, take a look at the following resources:
+Copy the repository-level safe template before starting the full stack:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```powershell
+Copy-Item ..\..\.env.local.example ..\..\.env.local
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Only variables prefixed with `NEXT_PUBLIC_` are exposed to browser code. Do not
+place credentials, private API keys, signing secrets, or database passwords in
+those variables.
 
-## Deploy on Vercel
+Common public configuration:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- `NEXT_PUBLIC_API_URL` — Django API origin
+- `NEXT_PUBLIC_MAP_TILE_URL` — trusted raster tile URL template
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Validation
+
+Run before opening a pull request:
+
+```powershell
+npm run format:check
+npm run lint
+npm run typecheck
+npm test -- --run
+npm run build
+npm run test:e2e
+npm audit --omit=dev --audit-level=high
+```
+
+Playwright starts the previously built production server. Run `npm run build`
+before `npm run test:e2e`. Browser coverage includes authentication, dashboard
+interactions, automated WCAG checks, unauthorized behavior, and the required
+desktop, tablet, and mobile breakpoints.
+
+## Production
+
+Build and run the standalone-compatible application:
+
+```powershell
+npm ci
+npm run build
+npm run start
+```
+
+Set the production API and map origins before building because public
+environment variables are embedded in the browser bundle. The application
+ships CSP, frame, content-type, referrer, and permissions headers from
+`next.config.ts`; preserve equivalent headers if a reverse proxy overrides
+them.
+
+The frontend container can be built from `tradegraph-ai` with:
+
+```powershell
+docker build apps/frontend
+```
+
+For the full production stack, secret requirements, TLS, backups, health
+checks, and rollback guidance, follow
+[the deployment guide](../../docs/deployment.md) and
+[security guide](../../docs/security.md).

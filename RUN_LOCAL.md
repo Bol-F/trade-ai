@@ -151,9 +151,12 @@ Run from `trade-ai\tradegraph-ai`:
 uv run ruff check .
 uv run mypy .
 uv run pytest
+npm run format:check
 npm run lint
+npm run typecheck
 npm test
 npm run build
+npm --prefix apps/frontend audit --omit=dev --audit-level=high
 ```
 
 Run browser tests after the application dependencies are installed:
