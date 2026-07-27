@@ -97,7 +97,7 @@ test("Russian locale switches and persists across navigation", async ({ page }) 
   await expect(page.locator("html")).toHaveAttribute("lang", "ru")
   await expect(
     page.getByRole("heading", {
-      name: "Узнайте, кто, чем и с кем торгует и как это меняется.",
+      name: "Smarter Market Decisions Powered by AI",
     }),
   ).toBeVisible()
 
@@ -117,8 +117,19 @@ test("responsive, dark mode, URL filters, and reference screenshots", async ({ p
   await mkdir(screenshotDir, { recursive: true })
 
   await page.goto("/")
-  await expect(page.getByRole("heading", { level: 1 })).toBeVisible()
+  await expect(page.getByRole("heading", { level: 1, name: "Smarter Market Decisions Powered by AI" })).toBeVisible()
+  await expect(page.getByRole("link", { name: "Start Free Analysis" })).toHaveAttribute("href", "/register")
+  await expect(page.getByRole("link", { name: "View Live Dashboard" })).toHaveAttribute("href", "/explorer")
+  await expect(page.getByText(/Trade AI provides analytical information only/)).toBeVisible()
   await page.screenshot({ path: join(screenshotDir, "landing-desktop.png"), fullPage: true })
+
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.getByRole("button", { name: "Open landing navigation" }).click()
+  await expect(page.getByRole("dialog")).toBeVisible()
+  await expect(page.getByRole("link", { name: "Pricing" })).toBeVisible()
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true)
+  await page.keyboard.press("Escape")
+  await page.setViewportSize({ width: 1280, height: 800 })
 
   await page.goto("/explorer?importer=UZB&product=01")
   await expect(page.getByLabel("Importer")).toHaveValue("UZB")

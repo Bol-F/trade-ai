@@ -1,3 +1,5 @@
+"use client"
+
 import { Bell, CircleAlert, Eye, Sparkles, TrendingDown, TrendingUp } from "lucide-react"
 
 import { ConfidenceIndicator, RiskIndicator, StatusBadge } from "@/components/design-system"
