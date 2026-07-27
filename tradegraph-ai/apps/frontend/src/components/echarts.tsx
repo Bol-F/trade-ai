@@ -1,20 +1,49 @@
 "use client"
 
-import { init, type EChartsOption } from "echarts"
+import { BarChart, LineChart, ScatterChart } from "echarts/charts"
+import {
+  DataZoomComponent,
+  GridComponent,
+  LegendComponent,
+  ToolboxComponent,
+  TooltipComponent,
+} from "echarts/components"
+import { init, use, type EChartsOption, type EChartsType } from "echarts/core"
+import { CanvasRenderer } from "echarts/renderers"
 import { useEffect, useRef } from "react"
+
+use([
+  BarChart,
+  LineChart,
+  ScatterChart,
+  DataZoomComponent,
+  GridComponent,
+  LegendComponent,
+  ToolboxComponent,
+  TooltipComponent,
+  CanvasRenderer,
+])
 
 export function EChart({ option, ariaLabel = "Data chart" }: { option: EChartsOption; ariaLabel?: string }) {
   const element = useRef<HTMLDivElement>(null)
+  const chart = useRef<EChartsType>(null)
+
   useEffect(() => {
     if (!element.current) return
-    const chart = init(element.current)
-    chart.setOption(option)
-    const resize = () => chart.resize()
-    window.addEventListener("resize", resize)
+    chart.current = init(element.current)
+    const observer = new ResizeObserver(() => chart.current?.resize())
+    observer.observe(element.current)
+
     return () => {
-      window.removeEventListener("resize", resize)
-      chart.dispose()
+      observer.disconnect()
+      chart.current?.dispose()
+      chart.current = null
     }
+  }, [])
+
+  useEffect(() => {
+    chart.current?.setOption(option, { notMerge: true })
   }, [option])
+
   return <div ref={element} className="h-[340px] w-full" role="img" aria-label={ariaLabel} />
 }
