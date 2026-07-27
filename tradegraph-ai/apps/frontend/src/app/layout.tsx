@@ -6,8 +6,11 @@ import { Providers } from "@/components/providers";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 export const metadata: Metadata = {
-  title: "TradeGraph AI",
-  description: "Global trade intelligence, connected.",
+  title: {
+    default: "Trade AI — Explainable Market Intelligence",
+    template: "%s | Trade AI",
+  },
+  description: "Analyze market trends, opportunities, and risk with explainable AI-assisted market intelligence.",
 };
 
 export default function RootLayout({
