@@ -73,8 +73,8 @@ export function MarketAnalysisDashboard() {
   return (
     <>
       <DashboardPageHeader
-        title="Market Analysis"
-        description="Explore illustrative market structure, technical context, sentiment, events, and explainable AI risk assessment."
+        titleKey="dashboard.market"
+        descriptionKey="dashboard.marketDescription"
         action={
           <label className="flex min-w-48 items-center gap-2">
             <span className="text-sm text-muted-foreground">Asset</span>

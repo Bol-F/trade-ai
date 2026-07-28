@@ -95,6 +95,43 @@ const messages = {
     "common.apply": "Apply filters",
     "common.reset": "Reset",
     "common.unavailable": "Unavailable",
+    "dashboard.navigation": "Dashboard navigation",
+    "dashboard.openNavigation": "Open dashboard navigation",
+    "dashboard.overview": "Overview",
+    "dashboard.signals": "AI Signals",
+    "dashboard.market": "Market Analysis",
+    "dashboard.portfolio": "Portfolio",
+    "dashboard.watchlist": "Watchlist",
+    "dashboard.alerts": "Alerts",
+    "dashboard.settings": "Settings",
+    "dashboard.breadcrumb": "Dashboard",
+    "dashboard.demoData": "Demo market data",
+    "dashboard.loading": "Loading secure workspace…",
+    "dashboard.signInTitle": "Sign in to open the dashboard",
+    "dashboard.signInDescription":
+      "Portfolio-style demo analytics and your private workspace are only available after authentication.",
+    "dashboard.signIn": "Sign In",
+    "dashboard.search": "Search dashboard",
+    "dashboard.searchPlaceholder": "Search assets, signals, or pages…",
+    "dashboard.notifications": "Notifications",
+    "dashboard.openNotifications": "Open notifications",
+    "dashboard.unreadNotifications": "3 unread notifications",
+    "dashboard.viewAlerts": "View all alerts",
+    "dashboard.profileSettings": "Profile & settings",
+    "dashboard.overviewDescription":
+      "A consolidated view of illustrative portfolio performance, market conditions, analytical signals, and risk.",
+    "dashboard.signalsDescription":
+      "Review structured, explainable market signals with visible confidence, risk, horizon, and supporting context.",
+    "dashboard.marketDescription":
+      "Explore illustrative market structure, technical context, sentiment, events, and explainable AI risk assessment.",
+    "dashboard.portfolioDescription":
+      "Inspect illustrative holdings, allocation, diversification, and risk. No brokerage account is connected.",
+    "dashboard.watchlistDescription":
+      "Monitor a local illustrative asset list. The backend’s existing watchlist models track international trade filters, not brokerage assets.",
+    "dashboard.alertsDescription":
+      "Organize illustrative price, signal, risk, and market-event conditions. Delivery is not connected to a production notification service.",
+    "dashboard.settingsDescription":
+      "Manage the account capabilities currently supported by Trade AI and review unavailable integrations transparently.",
     "explorer.eyebrow": "Core analysis workspace",
     "explorer.title": "Trade Explorer",
     "explorer.description":
@@ -319,6 +356,43 @@ const messages = {
       "Не удалось ранжировать кандидатов. Проверьте импортёра, товар и покрытие активных данных.",
     "supplier.empty":
       "Нет экспортёров, соответствующих требованиям положительной торговли и минимальной истории.",
+    "dashboard.navigation": "Навигация панели",
+    "dashboard.openNavigation": "Открыть навигацию панели",
+    "dashboard.overview": "Обзор",
+    "dashboard.signals": "Сигналы ИИ",
+    "dashboard.market": "Анализ рынка",
+    "dashboard.portfolio": "Портфель",
+    "dashboard.watchlist": "Список наблюдения",
+    "dashboard.alerts": "Оповещения",
+    "dashboard.settings": "Настройки",
+    "dashboard.breadcrumb": "Панель управления",
+    "dashboard.demoData": "Демонстрационные рыночные данные",
+    "dashboard.loading": "Загрузка защищённого пространства…",
+    "dashboard.signInTitle": "Войдите, чтобы открыть панель",
+    "dashboard.signInDescription":
+      "Демонстрационная аналитика портфеля и личное рабочее пространство доступны после авторизации.",
+    "dashboard.signIn": "Войти",
+    "dashboard.search": "Поиск по панели",
+    "dashboard.searchPlaceholder": "Поиск активов, сигналов или страниц…",
+    "dashboard.notifications": "Уведомления",
+    "dashboard.openNotifications": "Открыть уведомления",
+    "dashboard.unreadNotifications": "3 непрочитанных уведомления",
+    "dashboard.viewAlerts": "Все оповещения",
+    "dashboard.profileSettings": "Профиль и настройки",
+    "dashboard.overviewDescription":
+      "Сводный обзор демонстрационной доходности портфеля, рыночных условий, аналитических сигналов и рисков.",
+    "dashboard.signalsDescription":
+      "Структурированные и объяснимые рыночные сигналы с оценкой уверенности, риска, горизонта и контекста.",
+    "dashboard.marketDescription":
+      "Анализ демонстрационной структуры рынка, технического контекста, настроений, событий и объяснимой оценки риска ИИ.",
+    "dashboard.portfolioDescription":
+      "Демонстрационные позиции, распределение, диверсификация и риск. Брокерский счёт не подключён.",
+    "dashboard.watchlistDescription":
+      "Локальный демонстрационный список активов. Модели списка наблюдения в API отслеживают фильтры международной торговли, а не брокерские активы.",
+    "dashboard.alertsDescription":
+      "Настройка демонстрационных условий цены, сигналов, риска и рыночных событий. Производственная служба уведомлений не подключена.",
+    "dashboard.settingsDescription":
+      "Управление доступными функциями учётной записи Trade AI и прозрачный обзор неподключённых интеграций.",
   },
 } as const;
 

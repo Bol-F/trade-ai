@@ -81,8 +81,8 @@ export function WatchlistDashboard() {
   return (
     <>
       <DashboardPageHeader
-        title="Watchlist"
-        description="Monitor a local illustrative asset list. The backend’s existing watchlist models track international trade filters, not brokerage assets."
+        titleKey="dashboard.watchlist"
+        descriptionKey="dashboard.watchlistDescription"
         action={
           <Button onClick={() => setAddOpen(true)}>
             <Plus aria-hidden="true" />

@@ -4,6 +4,7 @@ import Link from "next/link";
 
 import { dashboardNavigation } from "@/components/dashboard/dashboard-nav";
 import { SheetClose } from "@/components/ui/sheet";
+import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 function active(pathname: string, href: string) {
@@ -17,9 +18,10 @@ export function DashboardNavigation({
   pathname: string;
   mobile?: boolean;
 }) {
+  const { t } = useI18n();
   return (
-    <nav aria-label="Dashboard navigation" className="flex flex-col gap-1">
-      {dashboardNavigation.map(({ label, href, icon: Icon }) => {
+    <nav aria-label={t("dashboard.navigation")} className="flex flex-col gap-1">
+      {dashboardNavigation.map(({ labelKey, href, icon: Icon }) => {
         const link = (
           <Link
             href={href}
@@ -30,7 +32,7 @@ export function DashboardNavigation({
             )}
           >
             <Icon aria-hidden="true" className="size-4" />
-            {label}
+            {t(labelKey)}
           </Link>
         );
         return mobile ? (

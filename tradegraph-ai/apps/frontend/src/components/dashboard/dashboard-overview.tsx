@@ -84,8 +84,8 @@ export function DashboardOverview() {
   return (
     <>
       <DashboardPageHeader
-        title="Overview"
-        description="A consolidated view of illustrative portfolio performance, market conditions, analytical signals, and risk."
+        titleKey="dashboard.overview"
+        descriptionKey="dashboard.overviewDescription"
       />
       <section
         aria-label="Portfolio metrics"

@@ -74,8 +74,8 @@ export function SettingsDashboard() {
   return (
     <>
       <DashboardPageHeader
-        title="Settings"
-        description="Manage the account capabilities currently supported by Trade AI and review unavailable integrations transparently."
+        titleKey="dashboard.settings"
+        descriptionKey="dashboard.settingsDescription"
       />
       <Tabs defaultValue="profile">
         <TabsList

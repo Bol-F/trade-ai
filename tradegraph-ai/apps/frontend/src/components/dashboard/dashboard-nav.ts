@@ -8,23 +8,36 @@ import {
   WalletCards,
   type LucideIcon,
 } from "lucide-react";
+import type { TranslationKey } from "@/lib/i18n";
 
 export type DashboardNavItem = {
-  label: string;
+  labelKey: TranslationKey;
   href: string;
   icon: LucideIcon;
 };
 
 export const dashboardNavigation: DashboardNavItem[] = [
-  { label: "Overview", href: "/dashboard", icon: LayoutDashboard },
-  { label: "AI Signals", href: "/dashboard/signals", icon: BrainCircuit },
+  { labelKey: "dashboard.overview", href: "/dashboard", icon: LayoutDashboard },
   {
-    label: "Market Analysis",
+    labelKey: "dashboard.signals",
+    href: "/dashboard/signals",
+    icon: BrainCircuit,
+  },
+  {
+    labelKey: "dashboard.market",
     href: "/dashboard/market",
     icon: ChartNoAxesCombined,
   },
-  { label: "Portfolio", href: "/dashboard/portfolio", icon: WalletCards },
-  { label: "Watchlist", href: "/dashboard/watchlist", icon: Eye },
-  { label: "Alerts", href: "/dashboard/alerts", icon: BellRing },
-  { label: "Settings", href: "/dashboard/settings", icon: Settings },
+  {
+    labelKey: "dashboard.portfolio",
+    href: "/dashboard/portfolio",
+    icon: WalletCards,
+  },
+  { labelKey: "dashboard.watchlist", href: "/dashboard/watchlist", icon: Eye },
+  { labelKey: "dashboard.alerts", href: "/dashboard/alerts", icon: BellRing },
+  {
+    labelKey: "dashboard.settings",
+    href: "/dashboard/settings",
+    icon: Settings,
+  },
 ];
