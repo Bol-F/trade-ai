@@ -4,8 +4,12 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from health.metrics import metrics
 from health.views import LivenessView, ReadinessView
 
+from config.i18n import LanguagePreferenceView
+
 urlpatterns = [
     path("admin/", admin.site.urls),
+    path("i18n/", include("django.conf.urls.i18n")),
+    path("api/v1/i18n/language", LanguagePreferenceView.as_view(), name="language-preference"),
     path("api/v1/health/live", LivenessView.as_view(), name="health-live"),
     path("api/v1/health/ready", ReadinessView.as_view(), name="health-ready"),
     path("metrics", metrics, name="metrics"),
