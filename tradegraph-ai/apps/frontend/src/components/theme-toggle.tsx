@@ -1,12 +1,12 @@
 "use client";
 import { Moon, Sun } from "lucide-react";
-import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
+import { useTheme } from "@/components/theme-provider";
 import { useI18n } from "@/lib/i18n";
 export function ThemeToggle() {
-  const { resolvedTheme, setTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
   const { t } = useI18n();
-  const dark = resolvedTheme === "dark";
+  const dark = theme === "dark";
   return (
     <Button
       variant="ghost"

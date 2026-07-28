@@ -1,11 +1,11 @@
 "use client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ThemeProvider } from "next-themes";
 import { useState } from "react";
 import { AuthProvider } from "@/components/auth-provider";
 import { I18nProvider } from "@/lib/i18n";
 import { defaultQueryOptions } from "@/lib/query-options";
 import { ToastProvider } from "@/components/ui/toast";
+import { ThemeProvider } from "@/components/theme-provider";
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
     () =>
@@ -18,7 +18,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       }),
   );
   return (
-    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+    <ThemeProvider>
       <I18nProvider>
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
