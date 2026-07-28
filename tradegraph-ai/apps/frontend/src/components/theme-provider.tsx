@@ -4,7 +4,6 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
   useState,
 } from "react";
@@ -16,7 +15,6 @@ type ThemeContextValue = {
   setTheme: (theme: Theme) => void;
 };
 
-const STORAGE_KEY = "trade-ai-theme";
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 function applyTheme(theme: Theme) {
@@ -25,33 +23,12 @@ function applyTheme(theme: Theme) {
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  // The root layout is rendered with the dark class, so the server output and
-  // first client render are deterministic. Browser preference is applied only
-  // after hydration.
+  // The root layout is rendered with the dark class, so the server output,
+  // first client render, and post-hydration state are deterministic.
   const [theme, updateTheme] = useState<Theme>("dark");
-
-  useEffect(() => {
-    let cancelled = false;
-    const saved = window.localStorage.getItem(STORAGE_KEY);
-    const preferred: Theme =
-      saved === "dark" || saved === "light"
-        ? saved
-        : window.matchMedia("(prefers-color-scheme: dark)").matches
-          ? "dark"
-          : "light";
-    queueMicrotask(() => {
-      if (cancelled) return;
-      updateTheme(preferred);
-      applyTheme(preferred);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   const setTheme = useCallback((nextTheme: Theme) => {
     updateTheme(nextTheme);
-    window.localStorage.setItem(STORAGE_KEY, nextTheme);
     applyTheme(nextTheme);
   }, []);
 
