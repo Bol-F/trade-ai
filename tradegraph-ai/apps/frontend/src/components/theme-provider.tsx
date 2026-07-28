@@ -31,6 +31,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, updateTheme] = useState<Theme>("dark");
 
   useEffect(() => {
+    let cancelled = false;
     const saved = window.localStorage.getItem(STORAGE_KEY);
     const preferred: Theme =
       saved === "dark" || saved === "light"
@@ -38,8 +39,14 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         : window.matchMedia("(prefers-color-scheme: dark)").matches
           ? "dark"
           : "light";
-    updateTheme(preferred);
-    applyTheme(preferred);
+    queueMicrotask(() => {
+      if (cancelled) return;
+      updateTheme(preferred);
+      applyTheme(preferred);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const setTheme = useCallback((nextTheme: Theme) => {
