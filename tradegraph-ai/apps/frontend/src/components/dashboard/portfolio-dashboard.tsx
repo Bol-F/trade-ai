@@ -77,8 +77,8 @@ export function PortfolioDashboard() {
   return (
     <>
       <DashboardPageHeader
-        title="Portfolio"
-        description="Inspect illustrative holdings, allocation, diversification, and risk. No brokerage account is connected."
+        titleKey="dashboard.portfolio"
+        descriptionKey="dashboard.portfolioDescription"
         action={<Button variant="outline">Export demo CSV</Button>}
       />
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

@@ -86,8 +86,8 @@ export function SignalsDashboard() {
   return (
     <>
       <DashboardPageHeader
-        title="AI Signals"
-        description="Review structured, explainable market signals with visible confidence, risk, horizon, and supporting context."
+        titleKey="dashboard.signals"
+        descriptionKey="dashboard.signalsDescription"
       />
       <Card className="shadow-none">
         <CardContent className="p-4">

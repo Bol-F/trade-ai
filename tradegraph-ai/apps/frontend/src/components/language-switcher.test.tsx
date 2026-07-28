@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { LanguageSwitcher } from "@/components/language-switcher";
+import { DashboardNavigation } from "@/components/dashboard/dashboard-navigation";
 import { I18nProvider, useI18n } from "@/lib/i18n";
 
 function TranslatedHeading() {
@@ -20,6 +21,7 @@ describe("LanguageSwitcher", () => {
       <I18nProvider>
         <LanguageSwitcher />
         <TranslatedHeading />
+        <DashboardNavigation pathname="/dashboard" />
       </I18nProvider>,
     );
 
@@ -28,6 +30,7 @@ describe("LanguageSwitcher", () => {
     await waitFor(() => {
       expect(document.documentElement.lang).toBe("ru");
       expect(window.localStorage.getItem("tradegraph-locale")).toBe("ru");
+      expect(document.cookie).toContain("django_language=ru");
     });
     expect(
       screen.getByRole("button", { name: /язык: русский/i }),
@@ -36,6 +39,9 @@ describe("LanguageSwitcher", () => {
       screen.getByRole("heading", {
         name: "Узнайте, кто, чем и с кем торгует и как это меняется.",
       }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Сигналы ИИ" }),
     ).toBeInTheDocument();
   });
 });

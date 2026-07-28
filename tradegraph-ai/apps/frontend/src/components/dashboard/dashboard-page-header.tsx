@@ -1,17 +1,22 @@
+"use client";
+
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import { useI18n, type TranslationKey } from "@/lib/i18n";
 
 export function DashboardPageHeader({
-  title,
-  description,
+  titleKey,
+  descriptionKey,
   action,
 }: {
-  title: string;
-  description: string;
+  titleKey: TranslationKey;
+  descriptionKey: TranslationKey;
   action?: React.ReactNode;
 }) {
+  const { t } = useI18n();
+  const title = t(titleKey);
   return (
     <header className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
       <div>
@@ -20,7 +25,7 @@ export function DashboardPageHeader({
           className="mb-3 flex items-center gap-1 text-xs text-muted-foreground"
         >
           <Link href="/dashboard" className="hover:text-foreground">
-            Dashboard
+            {t("dashboard.breadcrumb")}
           </Link>
           <ChevronRight aria-hidden="true" className="size-3" />
           <span aria-current="page">{title}</span>
@@ -33,11 +38,11 @@ export function DashboardPageHeader({
             variant="outline"
             className="border-warning/30 bg-warning-surface text-warning"
           >
-            Demo market data
+            {t("dashboard.demoData")}
           </Badge>
         </div>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-          {description}
+          {t(descriptionKey)}
         </p>
       </div>
       {action && <div className="shrink-0">{action}</div>}

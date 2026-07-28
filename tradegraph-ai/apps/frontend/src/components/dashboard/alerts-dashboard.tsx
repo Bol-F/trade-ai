@@ -71,8 +71,8 @@ export function AlertsDashboard() {
   return (
     <>
       <DashboardPageHeader
-        title="Alerts"
-        description="Organize illustrative price, signal, risk, and market-event conditions. Delivery is not connected to a production notification service."
+        titleKey="dashboard.alerts"
+        descriptionKey="dashboard.alertsDescription"
         action={
           <Button onClick={() => setCreateOpen(true)}>
             <Plus aria-hidden="true" />

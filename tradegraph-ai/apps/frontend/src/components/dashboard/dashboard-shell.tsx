@@ -36,11 +36,13 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { authApi } from "@/lib/api";
+import { useI18n } from "@/lib/i18n";
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, isLoading, refresh } = useAuth();
+  const { t } = useI18n();
   const [search, setSearch] = useState("");
 
   async function logout() {
@@ -54,7 +56,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     const query = search.trim().toLowerCase();
     if (!query) return;
     const page = dashboardNavigation.find((item) =>
-      item.label.toLowerCase().includes(query),
+      t(item.labelKey).toLowerCase().includes(query),
     );
     router.push(
       page?.href ??
@@ -69,7 +71,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         role="status"
         className="grid min-h-screen place-items-center text-sm text-muted-foreground"
       >
-        Loading secure workspace…
+        {t("dashboard.loading")}
       </div>
     );
   }
@@ -80,14 +82,13 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         <div className="max-w-md rounded-2xl border bg-card p-8 text-center shadow-card">
           <Network aria-hidden="true" className="mx-auto size-8 text-primary" />
           <h1 className="mt-5 text-2xl font-semibold">
-            Sign in to open the dashboard
+            {t("dashboard.signInTitle")}
           </h1>
           <p className="mt-3 text-sm leading-6 text-muted-foreground">
-            Portfolio-style demo analytics and your private workspace are only
-            available after authentication.
+            {t("dashboard.signInDescription")}
           </p>
           <Button asChild className="mt-6">
-            <Link href="/login">Sign In</Link>
+            <Link href="/login">{t("dashboard.signIn")}</Link>
           </Button>
         </div>
       </main>
@@ -126,7 +127,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                 size="icon"
                 variant="outline"
                 className="lg:hidden"
-                aria-label="Open dashboard navigation"
+                aria-label={t("dashboard.openNavigation")}
               >
                 <Menu aria-hidden="true" />
               </Button>
@@ -155,8 +156,8 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             <Input
               className="h-9 pl-9"
               type="search"
-              aria-label="Search dashboard"
-              placeholder="Search assets, signals, or pages…"
+              aria-label={t("dashboard.search")}
+              placeholder={t("dashboard.searchPlaceholder")}
               value={search}
               onChange={(event) => setSearch(event.target.value)}
             />
@@ -169,18 +170,20 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                 <Button
                   size="icon"
                   variant="ghost"
-                  aria-label="Open notifications"
+                  aria-label={t("dashboard.openNotifications")}
                   className="relative"
                 >
                   <Bell aria-hidden="true" />
                   <span className="absolute right-2 top-2 size-1.5 rounded-full bg-warning">
-                    <span className="sr-only">3 unread notifications</span>
+                    <span className="sr-only">
+                      {t("dashboard.unreadNotifications")}
+                    </span>
                   </span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-80">
                 <DropdownMenuLabel>
-                  Notifications{" "}
+                  {t("dashboard.notifications")}{" "}
                   <span className="ml-1 text-xs font-normal text-muted-foreground">
                     Demo data
                   </span>
@@ -195,7 +198,9 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                   </div>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link href="/dashboard/alerts">View all alerts</Link>
+                  <Link href="/dashboard/alerts">
+                    {t("dashboard.viewAlerts")}
+                  </Link>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -226,12 +231,12 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                 <DropdownMenuItem asChild>
                   <Link href="/dashboard/settings">
                     <UserRound />
-                    Profile & settings
+                    {t("dashboard.profileSettings")}
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem onSelect={logout}>
                   <LogOut />
-                  Log out
+                  {t("auth.logout")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
