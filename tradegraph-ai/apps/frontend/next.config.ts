@@ -1,14 +1,16 @@
 import type { NextConfig } from "next";
 
-const apiOrigin = new URL(process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000").origin
+const apiOrigin = new URL(
+  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000",
+).origin;
 const mapTileOrigin = new URL(
   process.env.NEXT_PUBLIC_MAP_TILE_URL ?? "https://tile.openstreetmap.org",
-).origin
+).origin;
 const scriptSource = [
   "'self'",
   "'unsafe-inline'",
   ...(process.env.NODE_ENV === "development" ? ["'unsafe-eval'"] : []),
-].join(" ")
+].join(" ");
 
 const nextConfig: NextConfig = {
   output: "standalone",
@@ -16,16 +18,24 @@ const nextConfig: NextConfig = {
     cpus: 1,
   },
   async headers() {
-    return [{
-      source: "/(.*)",
-      headers: [
-        { key: "X-Content-Type-Options", value: "nosniff" },
-        { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-        { key: "X-Frame-Options", value: "DENY" },
-        { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
-        { key: "Content-Security-Policy", value: `default-src 'self'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'; object-src 'none'; img-src 'self' data: blob: ${mapTileOrigin}; font-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src ${scriptSource}; worker-src 'self' blob:; connect-src 'self' ${apiOrigin} ${mapTileOrigin}` },
-      ],
-    }]
+    return [
+      {
+        source: "/(.*)",
+        headers: [
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "X-Frame-Options", value: "DENY" },
+          {
+            key: "Permissions-Policy",
+            value: "camera=(), microphone=(), geolocation=()",
+          },
+          {
+            key: "Content-Security-Policy",
+            value: `default-src 'self'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'; object-src 'none'; img-src 'self' data: blob: ${mapTileOrigin}; font-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src ${scriptSource}; worker-src 'self' blob:; connect-src 'self' ${apiOrigin} ${mapTileOrigin}`,
+          },
+        ],
+      },
+    ];
   },
 };
 
