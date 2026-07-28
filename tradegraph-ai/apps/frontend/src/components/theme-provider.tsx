@@ -18,7 +18,8 @@ type ThemeContextValue = {
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 function applyTheme(theme: Theme) {
-  document.documentElement.classList.toggle("dark", theme === "dark");
+  document.documentElement.classList.remove("dark", "light");
+  document.documentElement.classList.add(theme);
   document.documentElement.style.colorScheme = theme;
 }
 
