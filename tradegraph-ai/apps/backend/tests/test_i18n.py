@@ -1,9 +1,12 @@
 import pytest
+from django.test import Client
 from django.urls import reverse
 
 
 @pytest.mark.django_db
-def test_language_api_uses_accept_language_and_lists_supported_locales(client):
+def test_language_api_uses_accept_language_and_lists_supported_locales(
+    client: Client,
+) -> None:
     response = client.get(reverse("language-preference"), HTTP_ACCEPT_LANGUAGE="ru")
 
     assert response.status_code == 200
@@ -18,7 +21,9 @@ def test_language_api_uses_accept_language_and_lists_supported_locales(client):
 
 
 @pytest.mark.django_db
-def test_language_api_persists_supported_locale_in_django_cookie(client):
+def test_language_api_persists_supported_locale_in_django_cookie(
+    client: Client,
+) -> None:
     response = client.post(
         reverse("language-preference"),
         {"language": "ru"},
@@ -31,7 +36,7 @@ def test_language_api_persists_supported_locale_in_django_cookie(client):
 
 
 @pytest.mark.django_db
-def test_language_api_rejects_unsupported_locale(client):
+def test_language_api_rejects_unsupported_locale(client: Client) -> None:
     response = client.post(
         reverse("language-preference"),
         {"language": "de"},
@@ -43,7 +48,7 @@ def test_language_api_rejects_unsupported_locale(client):
 
 
 @pytest.mark.django_db
-def test_admin_login_uses_russian_django_translation(client):
+def test_admin_login_uses_russian_django_translation(client: Client) -> None:
     client.cookies["django_language"] = "ru"
     response = client.get(reverse("admin:login"))
 
