@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { getBrowserLocale } from "@/lib/locale";
+
 export const apiBaseUrl =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
 const healthSchema = z.object({
@@ -38,6 +40,7 @@ export async function apiRequest<T>(
     credentials: "include",
     headers: {
       "Content-Type": "application/json",
+      "Accept-Language": getBrowserLocale(),
       ...(csrfToken && !["GET", "HEAD", "OPTIONS"].includes(method)
         ? { "X-CSRFToken": decodeURIComponent(csrfToken) }
         : {}),

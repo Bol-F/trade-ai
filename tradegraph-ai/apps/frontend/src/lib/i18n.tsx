@@ -10,7 +10,13 @@ import {
   useState,
 } from "react";
 
-export type Locale = "en" | "ru";
+import {
+  getBrowserLocale,
+  persistBrowserLocale,
+  type Locale,
+} from "@/lib/locale";
+
+export type { Locale } from "@/lib/locale";
 
 const messages = {
   en: {
@@ -325,12 +331,6 @@ type I18nContextValue = {
 };
 
 const I18nContext = createContext<I18nContextValue | null>(null);
-const STORAGE_KEY = "tradegraph-locale";
-
-function isLocale(value: string | null): value is Locale {
-  return value === "en" || value === "ru";
-}
-
 export function I18nProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<{ locale: Locale; hydrated: boolean }>({
     locale: "en",
@@ -344,12 +344,7 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let cancelled = false;
-    const saved = window.localStorage.getItem(STORAGE_KEY);
-    const preferred = isLocale(saved)
-      ? saved
-      : navigator.language.toLowerCase().startsWith("ru")
-        ? "ru"
-        : "en";
+    const preferred = getBrowserLocale();
     queueMicrotask(() => {
       if (!cancelled && !userSelectedLocale.current) {
         setState({ locale: preferred, hydrated: true });
@@ -362,8 +357,7 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!state.hydrated) return;
-    window.localStorage.setItem(STORAGE_KEY, state.locale);
-    document.documentElement.lang = state.locale;
+    persistBrowserLocale(state.locale);
   }, [state]);
 
   const value = useMemo<I18nContextValue>(

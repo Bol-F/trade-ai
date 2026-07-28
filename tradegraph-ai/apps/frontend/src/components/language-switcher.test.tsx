@@ -28,6 +28,7 @@ describe("LanguageSwitcher", () => {
     await waitFor(() => {
       expect(document.documentElement.lang).toBe("ru");
       expect(window.localStorage.getItem("tradegraph-locale")).toBe("ru");
+      expect(document.cookie).toContain("django_language=ru");
     });
     expect(
       screen.getByRole("button", { name: /язык: русский/i }),
